@@ -1,0 +1,15 @@
+/* Explore Page - Minimal CSS (mostly using Bootstrap) */
+.explore-page {
+  padding: 1.5rem 0;
+  background-color: #fafafa;
+  min-height: 100vh;
+}
+
+/* Only add CSS for things Bootstrap can't handle */
+.nav-link {
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: #f3f4f6 !important;
+}

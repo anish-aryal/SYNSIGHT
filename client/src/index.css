@@ -1,6 +1,13 @@
+/* Import Inter Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* Prevent layout shift when scrollbar appears */
+html {
+  overflow-y: scroll;
+}
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
@@ -11,6 +18,28 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Gradient Variables */
+  --gradient-primary: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  --gradient-primary-80: linear-gradient(135deg, rgba(21, 93, 252, 0.8) 0%, rgba(152, 16, 250, 0.8) 100%);
+  --gradient-primary-10: linear-gradient(135deg, rgba(21, 93, 252, 0.1) 0%, rgba(152, 16, 250, 0.1) 100%);
+  
+  /* Color Variables */
+  --color-primary-start: #155DFC;
+  --color-primary-end: #9810FA;
+  
+  --font-family: 'Inter', system-ui, sans-serif;
+
+  /* Typography Variables */
+  --font-size-normal: 12.5px;
+  --font-size-subtitle: 10.5px;
+  --font-size-heading: 18px;
+  --font-size-subheading: 14px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 }
 
 a {
@@ -26,11 +55,17 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  font-family: 'Inter', sans-serif;
+}
+
+h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
 }
 
 button {
@@ -39,7 +74,7 @@ button {
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
-  font-family: inherit;
+  font-family: 'Inter', inherit;
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
@@ -50,6 +85,205 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Gradient Utility Classes */
+.gradient-primary {
+  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+}
+
+.gradient-primary-80 {
+  background: linear-gradient(135deg, rgba(21, 93, 252, 0.8) 0%, rgba(152, 16, 250, 0.8) 100%);
+}
+
+.gradient-primary-10 {
+  background: linear-gradient(135deg, rgba(21, 93, 252, 0.1) 0%, rgba(152, 16, 250, 0.1) 100%);
+}
+
+/* Alternative utility names */
+.bg-gradient-100 {
+  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+}
+
+.bg-gradient-80 {
+  background: linear-gradient(135deg, rgba(21, 93, 252, 0.8) 0%, rgba(152, 16, 250, 0.8) 100%);
+}
+
+.bg-gradient-10 {
+  background: linear-gradient(135deg, rgba(21, 93, 252, 0.1) 0%, rgba(152, 16, 250, 0.1) 100%);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient Border */
+.gradient-border {
+  position: relative;
+  border-radius: 8px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Hover Effects with Gradient */
+.hover-gradient {
+  transition: all 0.3s ease;
+}
+
+.hover-gradient:hover {
+  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  color: white;
+}
+
+/* ========================================
+   TYPOGRAPHY UTILITY CLASSES
+   ======================================== */
+
+/* NORMAL - 12.5px */
+.text-normal-regular,
+.normal-regular {
+  font-size: 12.5px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-normal-medium,
+.normal-medium {
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-normal-semibold,
+.normal-semibold {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-normal-bold,
+.normal-bold {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+}
+
+/* SUBTITLE - 10.5px */
+.text-subtitle-regular,
+.subtitle-regular {
+  font-size: 10.5px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-subtitle-medium,
+.subtitle-medium {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-subtitle-semibold,
+.subtitle-semibold {
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-subtitle-bold,
+.subtitle-bold {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+}
+
+/* HEADING - 18px */
+.text-heading-regular,
+.heading-regular {
+  font-size: 18px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-heading-medium,
+.heading-medium {
+  font-size: 18px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-heading-semibold,
+.heading-semibold {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-heading-bold,
+.heading-bold {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+}
+
+/* SUBHEADING - 14px */
+.text-subheading-regular,
+.subheading-regular {
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-subheading-medium,
+.subheading-medium {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-subheading-semibold,
+.subheading-semibold {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-subheading-bold,
+.subheading-bold {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Font Weight Only Utilities */
+.fw-regular {
+  font-weight: 400;
+}
+
+.fw-medium {
+  font-weight: 500;
+}
+
+.fw-semibold {
+  font-weight: 600;
+}
+
+.fw-bold {
+  font-weight: 700;
 }
 
 @media (prefers-color-scheme: light) {

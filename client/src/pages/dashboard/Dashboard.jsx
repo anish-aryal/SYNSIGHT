@@ -17,7 +17,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <Container fluid className="py-4">
+      <Container  className="mt-5">
         {/* Header */}
         <Row className="mb-4">
           <Col>
