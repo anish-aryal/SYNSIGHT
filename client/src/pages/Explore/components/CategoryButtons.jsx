@@ -3,14 +3,14 @@ import { Button } from 'reactstrap';
 
 export default function CategoryButtons({ categories, activeCategory, setActiveCategory }) {
   return (
-    <div className="d-flex flex-wrap gap-2 mb-4">
+    <div className="d-flex flex-wrap gap-2 mt-4 mb-4">
       {categories.map((category, index) => (
         <Button
           key={index}
-          className={`px-3 py-2 rounded-2 bg-white border border-secondary-subtle ${
+          className={`px-3 py-2 rounded-2 bg-white  ${
             activeCategory === category.toLowerCase()
-              ? 'gradient-primary text-white border-0'
-              : 'text-dark'
+              ? ' text-primary border border-primary'
+              : 'text-dark border-0'
           }`}
           onClick={() => setActiveCategory(category.toLowerCase())}
         >
