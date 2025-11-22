@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Container, Row, Col } from 'reactstrap';
-import ExploreHeader from './components/ExploreHeader';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import FilterTabs from './components/FilterTabs';
 import CategoryButtons from './components/CategoryButtons';
 import TopicCard from './components/TopicCard';
@@ -89,48 +89,48 @@ export default function Explore() {
     }
   ];
 
-  const recentSearchesData = [
-    {
-      id: 1,
-      title: 'Tesla brand sentiment',
-      platform: 'Twitter',
-      timeAgo: '2 hours ago',
-      sentiment: 78,
-      sentimentLabel: 'positive'
-    },
-    {
-      id: 2,
-      title: 'Nike vs Adidas',
-      platform: 'Reddit',
-      timeAgo: '5 hours ago',
-      sentiment: 65,
-      sentimentLabel: 'positive'
-    },
-    {
-      id: 3,
-      title: 'iPhone 15 reviews',
-      platform: 'Twitter',
-      timeAgo: '1 day ago',
-      sentiment: 82,
-      sentimentLabel: 'positive'
-    },
-    {
-      id: 4,
-      title: 'Climate change discussion',
-      platform: 'Reddit',
-      timeAgo: '2 days ago',
-      sentiment: 45,
-      sentimentLabel: 'positive'
-    },
-    {
-      id: 5,
-      title: 'AI ethics debate',
-      platform: 'Twitter',
-      timeAgo: '3 days ago',
-      sentiment: 52,
-      sentimentLabel: 'positive'
-    }
-  ];
+const recentSearchesData = [
+  {
+    id: 1,
+    title: 'Tesla brand sentiment',
+    platform: 'Twitter',
+    timeAgo: '2 hours ago',
+    sentiment: 78,
+    sentimentLabel: 'positive'
+  },
+  {
+    id: 2,
+    title: 'Nike vs Adidas',
+    platform: 'Reddit',
+    timeAgo: '5 hours ago',
+    sentiment: 65,
+    sentimentLabel: 'positive'
+  },
+  {
+    id: 3,
+    title: 'iPhone 15 reviews',
+    platform: 'Twitter',
+    timeAgo: '1 day ago',
+    sentiment: 82,
+    sentimentLabel: 'positive'
+  },
+  {
+    id: 4,
+    title: 'Climate change discussion',
+    platform: 'Reddit',
+    timeAgo: '2 days ago',
+    sentiment: 45,
+    sentimentLabel: 'neutral'
+  },
+  {
+    id: 5,
+    title: 'AI ethics debate',
+    platform: 'Twitter',
+    timeAgo: '3 days ago',
+    sentiment: 32,
+    sentimentLabel: 'negative'
+  }
+];
 
   const filteredTopics = activeCategory === 'all' 
     ? allTopics 
@@ -141,7 +141,10 @@ export default function Explore() {
       <Container className='mt-5'>
         <Row>
           <Col>
-            <ExploreHeader />
+            <PageHeader 
+              title="Explore"
+              subtitle="Discover trending topics and recent searches"
+            />
             
             <FilterTabs 
               activeTab={activeTab}

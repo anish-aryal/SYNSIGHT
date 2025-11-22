@@ -1,0 +1,34 @@
+/* Projects Page Styles */
+.projects-page {
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding: 1.5rem 0;
+}
+
+/* Project card hover effect */
+.project-card {
+  transition: all 0.2s ease;
+}
+
+.project-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-2px);
+  cursor: pointer;
+}
+
+/* Search input styling */
+.projects-page .input-group input:focus {
+  box-shadow: none;
+  border-color: #d1d5db;
+}
+
+.projects-page .input-group .btn:focus {
+  box-shadow: none;
+}
+
+/* New Project button hover */
+.projects-page .gradient-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}

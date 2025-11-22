@@ -5,6 +5,8 @@ import App from './App';
 import Dashboard from './pages/dashboard/Dashboard';
 import Explore from './pages/Explore/Explore';
 import Chat from './pages/Chat/Chat';
+import Reports from './pages/Reports/Reports';
+import Projects from './pages/Projects/Projects';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
@@ -17,9 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
-          <Route path="/projects" element={<div className="p-4">Projects Page</div>} />
+          <Route path="/projects" element={<Projects />} />
           <Route path="/explore" element={<Explore />} />
-          <Route path="/reports" element={<div className="p-4">Reports Page</div>} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/history" element={<div className="p-4">History Page</div>} />
           <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
           <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />

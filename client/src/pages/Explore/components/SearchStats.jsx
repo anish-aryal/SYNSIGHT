@@ -31,7 +31,7 @@ export default function SearchStats() {
     <Row className="g-4 mt-2">
       {stats.map((stat) => (
         <Col key={stat.id} xs={12} md={4}>
-          <Card className="border-1 shadow-sm">
+          <Card className="border-1 shadow-sm p-3">
             <CardBody>
               <div className="d-flex justify-content-between align-items-start">
                 <div>

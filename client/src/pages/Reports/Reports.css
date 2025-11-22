@@ -1,0 +1,30 @@
+/* Reports Page Styles */
+.reports-page {
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding: 1.5rem 0;
+}
+
+/* Hover effects for report items */
+.reports-page .border.rounded-2:hover {
+  background-color: #f9fafb !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+/* Search input styling */
+.reports-page .input-group input:focus {
+  box-shadow: none;
+  border-color: #d1d5db;
+}
+
+.reports-page .input-group .btn:focus {
+  box-shadow: none;
+}
+
+/* Empty state button hover */
+.reports-page .gradient-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
