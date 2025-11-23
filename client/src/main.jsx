@@ -7,6 +7,7 @@ import Explore from './pages/Explore/Explore';
 import Chat from './pages/Chat/Chat';
 import Reports from './pages/Reports/Reports';
 import Projects from './pages/Projects/Projects';
+import Settings from './pages/Settings/Settings';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
@@ -25,7 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/history" element={<div className="p-4">History Page</div>} />
           <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
           <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
-          <Route path="/settings" element={<div className="p-4">Settings Page</div>} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </App>
     </Router>

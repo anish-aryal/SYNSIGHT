@@ -1,0 +1,23 @@
+/* Settings Page Styles */
+.settings-page {
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding: 1.5rem 0;
+}
+
+/* Settings tabs */
+
+.settings-tabs .nav-link:hover {
+  background-color: #ffffff;
+}
+
+/* Form inputs */
+.settings-page .form-control:focus {
+  box-shadow: none;
+  background-color: #f3f4f6;
+}
+
+/* Buttons */
+.settings-page .gradient-primary:hover {
+  opacity: 0.9;
+}
