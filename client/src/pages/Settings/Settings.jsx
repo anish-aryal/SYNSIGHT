@@ -3,10 +3,28 @@ import { Container, Row, Col } from 'reactstrap';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import SettingsTabs from './components/SettingsTabs';
 import ProfileSettings from './components/ProfileSettings';
+import NotificationsSettings from './components/NotificationsSettings';
 import './Settings.css';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return <ProfileSettings />;
+      case 'notifications':
+        return <NotificationsSettings />;
+      case 'preferences':
+        return <div className="text-center py-5 text-muted">Preferences coming soon...</div>;
+      case 'security':
+        return <div className="text-center py-5 text-muted">Security settings coming soon...</div>;
+      case 'billing':
+        return <div className="text-center py-5 text-muted">Billing settings coming soon...</div>;
+      default:
+        return <ProfileSettings />;
+    }
+  };
 
   return (
     <div className="settings-page">
@@ -24,7 +42,7 @@ export default function Settings() {
             />
 
             <div className="mt-4">
-              <ProfileSettings />
+              {renderTabContent()}
             </div>
           </Col>
         </Row>

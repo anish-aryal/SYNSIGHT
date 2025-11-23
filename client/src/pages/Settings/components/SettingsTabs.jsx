@@ -12,7 +12,7 @@ export default function SettingsTabs({ activeTab, setActiveTab }) {
   ];
 
   return (
-    <div className="p-1 bg-white rounded-3 d-inline-flex border">
+    <div className="px-2 bg-white rounded-3 d-inline-flex">
     <Nav className="settings-tabs gap-2">
       {tabs.map((tab) => {
         const Icon = tab.icon;
