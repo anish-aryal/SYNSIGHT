@@ -286,15 +286,16 @@ button:focus-visible {
   font-weight: 700;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+
+/* Main content offset for fixed sidebar */
+.main-content {
+  padding-left: 260px;
+}
+
+/* Mobile: no sidebar, add top padding for mobile navbar */
+@media (max-width: 991.98px) {
+  .main-content {
+    padding-left: 0;
+    padding-top: 56px;
   }
 }

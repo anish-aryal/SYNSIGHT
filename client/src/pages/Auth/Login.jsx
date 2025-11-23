@@ -21,6 +21,8 @@ export default function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Login:', formData);
+    //navigate to dashboard
+    document.location.href = '/dashboard';
   };
 
   const handleGoogleLogin = () => {
@@ -97,7 +99,7 @@ export default function Login() {
 
                   <div className="text-center mt-4">
                     <span className="text-muted">Don't have an account? </span>
-                    <Link to="/register" className="auth-link">Sign up</Link>
+                    <Link to="/signup" className="auth-link">Sign up</Link>
                   </div>
                 </div>
               </Card>

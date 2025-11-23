@@ -1,20 +1,23 @@
-/* Landing Page - Minimal Custom CSS */
+/* Landing Page */
 .landing-page {
-  background-color: #fafafa;
+background: linear-gradient(135deg, #f5f7ff 0%, #fafafa 50%, #faf5ff 100%);
 }
 
-/* Hero Section */
-.hero-section {
-  background: linear-gradient(135deg, #f5f7ff 0%, #fafafa 50%, #faf5ff 100%);
-}
+
 
 .hero-badge {
   background-color: #e0e7ff !important;
   color: #155DFC !important;
   border: none;
+  font-size: 0.75rem;
 }
 
-/* Features Section */
+.hero-image-wrapper {
+  border: 10px solid white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* Features */
 .features-section {
   background: linear-gradient(180deg, #f5f7ff 0%, #fafafa 100%);
 }
@@ -24,13 +27,21 @@
   transition: all 0.3s ease;
 }
 
-/* CTA Section */
+.feature-icon-wrapper {
+  background-color: #f3f4f6;
+}
+
+/* CTA */
 .cta-card {
   background: var(--gradient-primary);
 }
 
+.cta-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 /* Footer */
-.letter-spacing {
+.footer-label {
   letter-spacing: 1px;
 }
 
@@ -42,16 +53,7 @@
   background: var(--gradient-primary);
 }
 
-.footer-logo-icon {
-  color: rgba(255, 255, 255, 0.3);
-}
-
 .footer-logo-text {
   color: rgba(255, 255, 255, 0.2);
   letter-spacing: 2px;
-}
-
-/* Remove last stat border */
-.hero-section .border-end:last-child {
-  border: none !important;
 }

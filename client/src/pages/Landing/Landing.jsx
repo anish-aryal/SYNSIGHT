@@ -9,12 +9,14 @@ import './Landing.css';
 
 export default function Landing() {
   return (
-    <div className="landing-page">
+      <Container fluid className=" px-5">
       <LandingNavbar />
-      <HeroSection />
-      <FeaturesSection />
-      <CTASection />
-      <Footer />
-    </div>
+        <main className='px-2 px-lg-5'>
+          <HeroSection />
+          <FeaturesSection />
+          <CTASection />
+        </main>
+        <Footer />
+       </Container>
   );
 }

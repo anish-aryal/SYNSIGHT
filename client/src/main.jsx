@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import App from './App';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AppLayout from './layouts/AppLayout';
 import Dashboard from './pages/dashboard/Dashboard';
 import Explore from './pages/Explore/Explore';
 import Chat from './pages/Chat/Chat';
@@ -14,13 +14,17 @@ import Landing from './pages/Landing/Landing';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Router>
-      <App>
-        <Routes>
-          <Route path="/" element={<Landing />} />
+      <Routes>
+        {/* Public Routes - No Sidebar */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Register />} />
+
+        {/* Authenticated Routes - With Sidebar */}
+        <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/projects" element={<Projects />} />
@@ -30,11 +34,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
           <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Register />} />
-
-        </Routes>
-      </App>
+        </Route>
+      </Routes>
     </Router>
   </React.StrictMode>
 );
