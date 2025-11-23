@@ -1,0 +1,57 @@
+/* Landing Page - Minimal Custom CSS */
+.landing-page {
+  background-color: #fafafa;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #f5f7ff 0%, #fafafa 50%, #faf5ff 100%);
+}
+
+.hero-badge {
+  background-color: #e0e7ff !important;
+  color: #155DFC !important;
+  border: none;
+}
+
+/* Features Section */
+.features-section {
+  background: linear-gradient(180deg, #f5f7ff 0%, #fafafa 100%);
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+}
+
+/* CTA Section */
+.cta-card {
+  background: var(--gradient-primary);
+}
+
+/* Footer */
+.letter-spacing {
+  letter-spacing: 1px;
+}
+
+.footer-link:hover {
+  color: #155DFC !important;
+}
+
+.footer-logo-section {
+  background: var(--gradient-primary);
+}
+
+.footer-logo-icon {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.footer-logo-text {
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 2px;
+}
+
+/* Remove last stat border */
+.hero-section .border-end:last-child {
+  border: none !important;
+}

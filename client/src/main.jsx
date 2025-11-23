@@ -8,6 +8,9 @@ import Chat from './pages/Chat/Chat';
 import Reports from './pages/Reports/Reports';
 import Projects from './pages/Projects/Projects';
 import Settings from './pages/Settings/Settings';
+import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
+import Landing from './pages/Landing/Landing';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
@@ -17,7 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <Router>
       <App>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/projects" element={<Projects />} />
@@ -27,6 +30,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
           <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Register />} />
+
         </Routes>
       </App>
     </Router>
