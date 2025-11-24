@@ -19,10 +19,44 @@ export default function Register() {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Register:', formData);
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+
+  if (formData.password !== formData.confirmPassword) {
+    setError('Passwords do not match');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:8000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Navigate to OTP verification page
+      navigate('/verify-otp', { state: { email: formData.email } });
+    } else {
+      setError(data.message || 'Registration failed');
+    }
+  } catch (err) {
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGoogleLogin = () => {
     console.log('Google signup');

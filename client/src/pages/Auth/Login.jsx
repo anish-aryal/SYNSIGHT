@@ -1,28 +1,78 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button } from 'reactstrap';
-import { Link } from 'react-router-dom';
+import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button, Alert } from 'reactstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLeftPanel from './components/AuthLeftPanel';
 import SocialLoginButtons from './components/SocialLoginButtons';
 import './Auth.css';
 
 export default function Login() {
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login:', formData);
-    //navigate to dashboard
-    document.location.href = '/dashboard';
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (data.requiresOtp) {
+          // 2FA enabled, navigate to OTP verification
+          navigate('/verify-otp', { 
+            state: { 
+              userId: data.userId, 
+              email: data.email,
+              isLoginOtp: true 
+            } 
+          });
+        } else {
+          // No 2FA, proceed to dashboard
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.data));
+          navigate('/dashboard');
+        }
+      } else {
+        if (data.requiresVerification) {
+          // Email not verified, redirect to OTP verification
+          navigate('/verify-otp', { 
+            state: { 
+              email: formData.email,
+              isLoginOtp: false 
+            } 
+          });
+        } else {
+          setError(data.message || 'Login failed');
+        }
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -48,6 +98,8 @@ export default function Login() {
                     <p className="text-muted mb-0">Sign in to continue your analysis</p>
                   </div>
 
+                  {error && <Alert color="danger" className="py-2 mb-3">{error}</Alert>}
+
                   <SocialLoginButtons 
                     onGoogleClick={handleGoogleLogin}
                     onFacebookClick={handleFacebookLogin}
@@ -68,6 +120,7 @@ export default function Login() {
                         value={formData.email}
                         onChange={handleChange}
                         className="auth-input"
+                        required
                       />
                     </FormGroup>
 
@@ -86,14 +139,16 @@ export default function Login() {
                         value={formData.password}
                         onChange={handleChange}
                         className="auth-input"
+                        required
                       />
                     </FormGroup>
 
                     <Button 
                       type="submit" 
                       className="auth-submit-btn gradient-primary border-0 w-100 mt-4"
+                      disabled={loading}
                     >
-                      Sign In
+                      {loading ? 'Signing in...' : 'Sign In'}
                     </Button>
                   </Form>
 

@@ -21,6 +21,14 @@ const userSchema = new mongoose.Schema({
     minlength: [8, 'Password must be at least 8 characters'],
     select: false
   },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  otp: {
+    code: String,
+    expiresAt: Date
+  },
   company: {
     type: String,
     default: '',
@@ -60,6 +68,10 @@ const userSchema = new mongoose.Schema({
     timezone: {
       type: String,
       default: 'UTC'
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: true
     }
   },
   subscription: {
@@ -86,9 +98,9 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
@@ -99,12 +111,42 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Get public profile (exclude sensitive data)
+// Generate OTP
+userSchema.methods.generateOTP = function() {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  this.otp = {
+    code: otp,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+  };
+  return otp;
+};
+
+// Verify OTP
+userSchema.methods.verifyOTP = function(enteredOTP) {
+  if (!this.otp || !this.otp.code || !this.otp.expiresAt) {
+    return false;
+  }
+  if (new Date() > this.otp.expiresAt) {
+    return false;
+  }
+  return this.otp.code === enteredOTP;
+};
+
+// Clear OTP
+userSchema.methods.clearOTP = function() {
+  this.otp = {
+    code: undefined,
+    expiresAt: undefined
+  };
+};
+
+// Get public profile
 userSchema.methods.getPublicProfile = function() {
   return {
     _id: this._id,
     fullName: this.fullName,
     email: this.email,
+    isVerified: this.isVerified,
     company: this.company,
     role: this.role,
     avatar: this.avatar,

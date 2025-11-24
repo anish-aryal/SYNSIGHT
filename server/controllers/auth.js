@@ -1,5 +1,20 @@
 import User from '../models/User.js';
-import generateToken from '../utils/generateToken.js';
+import sendEmail from '../utils/sendEmail.js';
+import { welcomeEmailTemplate } from '../utils/emailTemplates.js';
+import {
+  sendOtpEmail,
+  findUserByEmailOrId,
+  validateOtpInput,
+  validateLoginCredentials,
+  validateRegistrationData
+} from'../helpers/authhelpers.js';
+import {
+  sendTokenResponse,
+  sendSuccessResponse,
+  sendErrorResponse,
+  sendOtpRequiredResponse,
+  sendVerificationRequiredResponse
+} from '../helpers/responseHelpers.js';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -8,47 +23,139 @@ export const register = async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
 
+    // Validate input
+    const validation = validateRegistrationData(fullName, email, password);
+    if (!validation.isValid) {
+      return sendErrorResponse(res, validation.message, 400);
+    }
+
     // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists'
-      });
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      // If user exists but not verified, allow re-registration
+      if (!user.isVerified) {
+        await User.deleteOne({ email });
+      } else {
+        return sendErrorResponse(res, 'User already exists', 400);
+      }
     }
 
     // Create user
-    const user = await User.create({
+    user = new User({
       fullName,
       email,
       password
     });
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Send OTP email
+    const emailSent = await sendOtpEmail(user, false);
+    
+    if (!emailSent) {
+      return sendErrorResponse(res, 'Failed to send verification email', 500);
+    }
 
-    // Set cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
-
-    res.status(201).json({
-      success: true,
-      data: {
+    sendSuccessResponse(
+      res,
+      'Registration successful. Please check your email for verification code.',
+      {
         _id: user._id,
-        fullName: user.fullName,
         email: user.email
       },
-      token
-    });
+      201
+    );
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Register error:', error);
+    sendErrorResponse(res, error.message, 500);
+  }
+};
+
+// @desc    Verify OTP (for both registration and login)
+// @route   POST /api/auth/verify-otp
+// @access  Public
+export const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp, userId } = req.body;
+
+    // Validate input
+    const validation = validateOtpInput(email, userId, otp);
+    if (!validation.isValid) {
+      return sendErrorResponse(res, validation.message, 400);
+    }
+
+    // Find user
+    const user = await findUserByEmailOrId(User, email, userId);
+    if (!user) {
+      return sendErrorResponse(res, 'User not found', 404);
+    }
+
+    // Verify OTP
+    if (!user.verifyOTP(otp)) {
+      return sendErrorResponse(res, 'Invalid or expired OTP', 400);
+    }
+
+    // Clear OTP
+    user.clearOTP();
+
+    // Check if this is email verification (user not verified yet)
+    if (!user.isVerified) {
+      user.isVerified = true;
+      await user.save();
+
+      // Send welcome email
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: 'Welcome to SYNSIGHT!',
+          html: welcomeEmailTemplate(user.fullName)
+        });
+      } catch (emailError) {
+        console.error('Welcome email error:', emailError);
+      }
+
+      return sendTokenResponse(user, res, 'Email verified successfully');
+    }
+
+    // This is login OTP verification
+    await user.save();
+    sendTokenResponse(user, res, 'Login successful');
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    sendErrorResponse(res, error.message, 500);
+  }
+};
+
+// @desc    Resend OTP (for both registration and login)
+// @route   POST /api/auth/resend-otp
+// @access  Public
+export const resendOTP = async (req, res) => {
+  try {
+    const { email, userId } = req.body;
+
+    // Validate input
+    if (!email && !userId) {
+      return sendErrorResponse(res, 'Please provide email or userId', 400);
+    }
+
+    // Find user
+    const user = await findUserByEmailOrId(User, email, userId);
+    if (!user) {
+      return sendErrorResponse(res, 'User not found', 404);
+    }
+
+    // Determine if this is login OTP or registration OTP
+    const isLoginOtp = user.isVerified;
+
+    // Send OTP email
+    const emailSent = await sendOtpEmail(user, isLoginOtp);
+    if (!emailSent) {
+      return sendErrorResponse(res, 'Failed to send email', 500);
+    }
+
+    sendSuccessResponse(res, 'OTP sent successfully');
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    sendErrorResponse(res, error.message, 500);
   }
 };
 
@@ -59,57 +166,50 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate email & password
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide email and password'
-      });
+    // Validate credentials
+    const validation = validateLoginCredentials(email, password);
+    if (!validation.isValid) {
+      return sendErrorResponse(res, validation.message, 400);
     }
 
     // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+      return sendErrorResponse(res, 'Invalid credentials', 401);
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+      return sendErrorResponse(res, 'Invalid credentials', 401);
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Check if verified
+    if (!user.isVerified) {
+      await sendOtpEmail(user, false);
+      return sendVerificationRequiredResponse(
+        res,
+        user.email,
+        'Email not verified. A new verification code has been sent.'
+      );
+    }
 
-    // Set cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
+    // Check if 2FA is enabled
+    if (user.preferences.twoFactorEnabled) {
+      const emailSent = await sendOtpEmail(user, true);
 
-    res.json({
-      success: true,
-      data: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email
-      },
-      token
-    });
+      if (!emailSent) {
+        return sendErrorResponse(res, 'Failed to send verification code', 500);
+      }
+
+      return sendOtpRequiredResponse(res, user._id, user.email);
+    }
+
+    // If 2FA not enabled, proceed with normal login
+    sendTokenResponse(user, res, 'Login successful');
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Login error:', error);
+    sendErrorResponse(res, error.message, 500);
   }
 };
 
@@ -122,10 +222,7 @@ export const logout = async (req, res) => {
     expires: new Date(0)
   });
 
-  res.json({
-    success: true,
-    message: 'Logged out successfully'
-  });
+  sendSuccessResponse(res, 'Logged out successfully');
 };
 
 // @desc    Get current user
@@ -135,14 +232,9 @@ export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    res.json({
-      success: true,
-      data: user
-    });
+    sendSuccessResponse(res, 'User retrieved successfully', user.getPublicProfile());
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Get me error:', error);
+    sendErrorResponse(res, error.message, 500);
   }
 };

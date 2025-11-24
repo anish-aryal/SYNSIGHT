@@ -11,6 +11,7 @@ import Settings from './pages/Settings/Settings';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Landing from './pages/Landing/Landing';
+import VerifyOTP from './pages/Auth/VerifyOTP';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
 
         {/* Authenticated Routes - With Sidebar */}
         <Route element={<AppLayout />}>
