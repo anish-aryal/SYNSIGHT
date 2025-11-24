@@ -37,7 +37,7 @@ export default function Chat() {
         <div className="chat-page">
             <Container className="chat-container">
                 <Row className="justify-content-center">
-                    <Col xs={12} md={10} lg={12}>
+                    <Col xs={12} md={11} lg={10}>
                         {/* Hero Section */}
                         <div className="chat-hero">
                             <div className="chat-icon-wrapper">
@@ -74,3 +74,4 @@ export default function Chat() {
         </div>
     );
 }
+

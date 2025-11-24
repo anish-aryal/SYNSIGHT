@@ -54,46 +54,46 @@
 }
 
 .search-input-group {
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  padding: 0.25rem 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .search-input {
-  border: none;
-  background-color: transparent;
-  font-size: 0.938rem;
-  padding: 0.75rem 1rem;
-  color: #1a1a1a;
-  flex: 1;
+  border: none !important;
+  background-color: transparent !important;
+  font-size: 0.938rem !important;
+  padding: 0.75rem 1rem 0.75rem 0 !important;
+  color: #1a1a1a !important;
+  flex: 1 !important;
 }
 
 .search-input:focus {
-  background-color: transparent;
-  box-shadow: none;
-  outline: none;
-  border: none;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: #9ca3af !important;
 }
 
 .options-btn {
-  background-color: transparent;
-  border: none;
-  color: #6b7280;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.875rem;
-  font-weight: 400;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  background-color: transparent !important;
+  border: none !important;
+  color: #6b7280 !important;
+  padding: 0.5rem 0.875rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.375rem !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
 }
 
 .options-btn:hover,
@@ -159,15 +159,15 @@
 }
 
 .topic-badge {
-  background-color: #ffffff;
-  color: #374151;
-  font-size: 0.875rem;
-  font-weight: 400;
-  padding: 0.5rem 1rem;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 6px;
+  background-color: #ffffff !important;
+  color: #374151  !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid #e5e7eb !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  border-radius: 6px !important;
 }
 
 .topic-badge:hover {
