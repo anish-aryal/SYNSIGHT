@@ -99,10 +99,10 @@
 .options-btn:hover,
 .options-btn:focus,
 .options-btn:active {
-  background-color: transparent;
-  color: #4b5563;
-  border: none;
-  box-shadow: none;
+  background-color: transparent !important;
+  color: #4b5563 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .send-btn {
@@ -119,7 +119,7 @@
 .send-btn:hover,
 .send-btn:focus,
 .send-btn:active {
-  background-color: #1f2937;
+  background-color: #1f2937 ;
   border: none;
   box-shadow: none;
 }
@@ -171,9 +171,11 @@
 }
 
 .topic-badge:hover {
-  background-color: #f9fafb;
-  color: #1a1a1a;
-  border-color: #d1d5db;
+  background-color: #f9fafb !important;
+   transition: all 0.2s ease !important;
+  color: #1a1a1a !important;
+  border-color: #d1d5db !important;
+  scale: 1.05 !important;
 }
 
 /* Responsive Design */

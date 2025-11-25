@@ -14,9 +14,11 @@ import Landing from './pages/Landing/Landing';
 import VerifyOTP from './pages/Auth/VerifyOTP';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
+import { AuthProvider } from './context/auth/authContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <AuthProvider>
     <Router>
       <Routes>
         {/* Public Routes - No Sidebar */}
@@ -39,5 +41,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </Route>
       </Routes>
     </Router>
+    </AuthProvider>
   </React.StrictMode>
 );
