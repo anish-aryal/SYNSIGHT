@@ -25,6 +25,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  expiresAt: {
+    type: Date,
+    default: function() {
+      return new Date(Date.now() + 24 * 60 * 60 * 1000);
+    }
+  },
   otp: {
     code: String,
     expiresAt: Date
@@ -96,6 +102,9 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// TTL Index - Auto-delete when expiresAt is reached
+userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Hash password before saving
 userSchema.pre('save', async function() {

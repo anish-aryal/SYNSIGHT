@@ -33,35 +33,43 @@ export const register = async (req, res) => {
     let user = await User.findOne({ email });
     
     if (user) {
-      // If user exists but not verified, allow re-registration
       if (!user.isVerified) {
-        await User.deleteOne({ email });
+        // Resend OTP to unverified user
+        const emailSent = await sendOtpEmail(user, false);
+        
+        if (!emailSent) {
+          return sendErrorResponse(res, 'Failed to send verification email', 500);
+        }
+
+        return sendSuccessResponse(
+          res,
+          'Verification code sent. Please check your email.',
+          { email: user.email },
+          200
+        );
       } else {
         return sendErrorResponse(res, 'User already exists', 400);
       }
     }
 
-    // Create user
+    // Create new user
     user = new User({
       fullName,
       email,
       password
     });
 
-    // Send OTP email
+    // Send OTP email (this also saves the user)
     const emailSent = await sendOtpEmail(user, false);
     
     if (!emailSent) {
-      return sendErrorResponse(res, 'Failed to send verification email', 500);
+      return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
     }
 
     sendSuccessResponse(
       res,
       'Registration successful. Please check your email for verification code.',
-      {
-        _id: user._id,
-        email: user.email
-      },
+      { email: user.email },
       201
     );
   } catch (error) {
@@ -98,11 +106,18 @@ export const verifyOTP = async (req, res) => {
     user.clearOTP();
 
     // Check if this is email verification (user not verified yet)
-    if (!user.isVerified) {
-      user.isVerified = true;
-      await user.save();
+    const isEmailVerification = !user.isVerified;
 
-      // Send welcome email
+    if (isEmailVerification) {
+      user.isVerified = true;
+      user.expiresAt = undefined;
+    }
+
+    // Save once at the end
+    await user.save();
+
+    // Send welcome email for new registrations
+    if (isEmailVerification) {
       try {
         await sendEmail({
           email: user.email,
@@ -117,7 +132,6 @@ export const verifyOTP = async (req, res) => {
     }
 
     // This is login OTP verification
-    await user.save();
     sendTokenResponse(user, res, 'Login successful');
   } catch (error) {
     console.error('Verify OTP error:', error);

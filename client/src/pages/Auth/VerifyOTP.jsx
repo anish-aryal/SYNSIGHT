@@ -1,17 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Alert, FormGroup, Label } from 'reactstrap';
+import { Container, Row, Col, Card, CardBody, Button, Alert } from 'reactstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Mail, Shield, Zap, Lock } from 'lucide-react';
+import { Mail, ShieldCheck, AlertTriangle } from 'lucide-react';
+
 import './Auth.css';
 
 export default function VerifyOTP() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Extract state values
-  const { email = '', userId = '', isLoginOtp = false } = location.state || {};
-  
-  // State management
+
+  const email = location.state?.email || '';
+  const userId = location.state?.userId || '';
+  const isLoginOtp = location.state?.isLoginOtp === true;
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -19,14 +20,13 @@ export default function VerifyOTP() {
   const [resending, setResending] = useState(false);
   const inputRefs = useRef([]);
 
-  // Redirect if no email or userId
   useEffect(() => {
     if (!email && !userId) {
-      navigate(isLoginOtp ? '/login' : '/signup');
+      navigate('/login');
     }
-  }, [email, userId, isLoginOtp, navigate]);
+    inputRefs.current[0]?.focus();
+  }, [email, userId, navigate]);
 
-  // OTP input handlers
   const handleChange = (index, value) => {
     if (value.length > 1) value = value[0];
     if (!/^\d*$/.test(value)) return;
@@ -34,6 +34,7 @@ export default function VerifyOTP() {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
+    setError('');
 
     if (value !== '' && index < 5) {
       inputRefs.current[index + 1]?.focus();
@@ -49,29 +50,18 @@ export default function VerifyOTP() {
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').slice(0, 6);
-    
+
     if (!/^\d+$/.test(pastedData)) return;
 
     const newOtp = pastedData.split('');
     while (newOtp.length < 6) newOtp.push('');
     setOtp(newOtp);
-    
-    const nextEmptyIndex = newOtp.findIndex(val => val === '');
+
+    const nextEmptyIndex = newOtp.findIndex((val) => val === '');
     const focusIndex = nextEmptyIndex !== -1 ? nextEmptyIndex : 5;
     inputRefs.current[focusIndex]?.focus();
   };
 
-  // API call helper
-  const makeApiCall = async (endpoint, body) => {
-    const response = await fetch(`http://localhost:8000/api/auth/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    return response.json();
-  };
-
-  // Handle OTP submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -86,18 +76,23 @@ export default function VerifyOTP() {
     setLoading(true);
 
     try {
-      const requestBody = userId ? { userId, otp: otpCode } : { email, otp: otpCode };
-      const data = await makeApiCall('verify-otp', requestBody);
+      const requestBody = isLoginOtp
+        ? { userId, otp: otpCode }
+        : { email, otp: otpCode };
+
+      const response = await fetch('http://localhost:8000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
 
       if (data.success) {
-        const successMessage = isLoginOtp 
-          ? 'Login successful! Redirecting...'
-          : 'Email verified successfully! Redirecting...';
-        
-        setSuccess(successMessage);
+        setSuccess(isLoginOtp ? 'Login successful!' : 'Email verified successfully!');
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.data));
-        
+
         setTimeout(() => navigate('/dashboard'), 1500);
       } else {
         setError(data.message || 'Verification failed');
@@ -109,15 +104,21 @@ export default function VerifyOTP() {
     }
   };
 
-  // Handle OTP resend
   const handleResend = async () => {
     setError('');
     setSuccess('');
     setResending(true);
 
     try {
-      const requestBody = userId ? { userId } : { email };
-      const data = await makeApiCall('resend-otp', requestBody);
+      const requestBody = isLoginOtp ? { userId } : { email };
+
+      const response = await fetch('http://localhost:8000/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
 
       if (data.success) {
         setSuccess('Verification code sent successfully!');
@@ -133,161 +134,89 @@ export default function VerifyOTP() {
     }
   };
 
-  // Dynamic content based on context
-  const getFeatures = () => {
-    if (isLoginOtp) {
-      return [
-        {
-          icon: Lock,
-          title: 'Two-Factor Authentication',
-          description: 'Extra security layer to protect your account'
-        },
-        {
-          icon: Shield,
-          title: 'Secure Login',
-          description: 'Your code expires in 10 minutes for security'
-        },
-        {
-          icon: Zap,
-          title: 'Quick Access',
-          description: "You'll be back to your dashboard in seconds"
-        }
-      ];
-    }
-
-    return [
-      {
-        icon: Mail,
-        title: 'Check Your Inbox',
-        description: 'We sent a 6-digit code to your email address'
-      },
-      {
-        icon: Shield,
-        title: 'Secure Verification',
-        description: 'Your code expires in 10 minutes for security'
-      },
-      {
-        icon: Zap,
-        title: 'Quick Setup',
-        description: "You'll be analyzing sentiment in seconds"
-      }
-    ];
-  };
-
-  const getContent = () => ({
-    backLink: isLoginOtp ? '/login' : '/signup',
-    backText: isLoginOtp ? 'Back to Login' : 'Back to Sign Up',
-    pageTitle: isLoginOtp ? 'Verify Login' : 'Verify Your Email',
-    pageDescription: isLoginOtp 
-      ? 'Enter the 6-digit verification code we sent to your email'
-      : `Enter the 6-digit code we sent to ${email}`,
-    tagline: isLoginOtp 
-      ? 'Verify your identity to continue securely.'
-      : 'Almost there! Verify your email to get started.',
-    buttonText: isLoginOtp ? 'Verify & Login' : 'Verify Email'
-  });
-
-  const features = getFeatures();
-  const content = getContent();
-
   return (
     <div className="auth-page">
-      <Container className="d-flex align-items-center justify-content-center min-vh-100 position-relative py-5">
-        <Row className="w-100 justify-content-center">
-          <Col xl={10} xxl={9}>
-            <div className="auth-wrapper">
-              {/* Left Card */}
-              <Card className="auth-left-card border-0">
-                <div className="auth-left-content">
-                  <Link to={content.backLink} className="auth-back-link text-decoration-none">
-                    <ArrowLeft size={18} />
-                    <span>{content.backText}</span>
-                  </Link>
+      <Container>
+        <Row className="justify-content-center align-items-center min-vh-100 py-5">
+          <Col xs={12} sm={10} md={8} lg={6} xl={5}>
+            <Card className="border-0 shadow rounded-4">
+              <CardBody className="p-4 p-sm-5 text-center">
+                <div className="otp-icon-box gradient-primary mx-auto mb-4">
+                  {isLoginOtp ? (
+                    <ShieldCheck size={32} color="white" strokeWidth={1.5} />
+                  ) : (
+                    <Mail size={32} color="white" strokeWidth={1.5} />
+                  )}
+                </div>
 
-                  <div className="auth-branding">
-                    <div className="auth-logo gradient-primary">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="28" viewBox="0 0 58 52" fill="none">
-                        <path d="M3.422 24.6106L25.2981 47.3267C26.0234 48.0798 27.0181 48.5139 28.0634 48.5336C29.1087 48.5533 30.1191 48.157 30.8722 47.4317L53.5883 25.5556" stroke="white" strokeWidth="6.84402" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M38.6003 28.0698V12.3013" stroke="white" strokeWidth="6.84402" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M28.7445 28.0698V4.41702" stroke="white" strokeWidth="6.84402" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M18.8895 28.0698V22.1566" stroke="white" strokeWidth="6.84402" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    <div className="auth-brand-name">SYNSIGHT</div>
-                    <h1 className="auth-tagline">{content.tagline}</h1>
+                <h2 className="fw-bold mb-2">
+                  {isLoginOtp ? 'Two-Factor Authentication' : 'Verify Your Email'}
+                </h2>
 
-                    <div className="auth-features">
-                      {features.map((feature, index) => (
-                        <div key={index} className="auth-feature-item">
-                          <div className="auth-feature-icon">
-                            <feature.icon size={20} className="text-primary" />
-                          </div>
-                          <div className="auth-feature-content">
-                            <h6 className="mb-0 fw-semibold">{feature.title}</h6>
-                            <p className="mb-0 text-muted">{feature.description}</p>
-                          </div>
-                        </div>
-                      ))}
+                <p className="text-muted mb-4">
+                  {isLoginOtp
+                    ? `Enter the 6-digit code sent to ${email}`
+                    : `We've sent a verification code to ${email}`}
+                </p>
+
+                {!isLoginOtp && (
+                  <Alert color="warning" className="d-flex align-items-start text-start mb-4">
+                    <AlertTriangle size={20} className="me-2 flex-shrink-0 mt-1" />
+                    <div>
+                      <strong>Important!</strong>
+                      <p className="mb-0 small">
+                        Please verify your email within 24 hours or your account will be automatically deleted.
+                      </p>
                     </div>
+                  </Alert>
+                )}
+
+                {error && <Alert color="danger" className="py-2">{error}</Alert>}
+                {success && <Alert color="success" className="py-2">{success}</Alert>}
+
+                <form onSubmit={handleSubmit}>
+                  <div className="otp-inputs mb-4">
+                    {otp.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (inputRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleChange(index, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(index, e)}
+                        onPaste={handlePaste}
+                        className="otp-single-input"
+                        disabled={loading}
+                      />
+                    ))}
                   </div>
-                </div>
-              </Card>
 
-              {/* Right Card */}
-              <Card className="auth-right-card border-0">
-                <div className="auth-form-container">
-                  <h2 className="fw-bold mb-2">{content.pageTitle}</h2>
-                  <p className="text-muted mb-4">{content.pageDescription}</p>
+                  <Button
+                    type="submit"
+                    className="auth-submit-btn gradient-primary border-0 w-100 py-3 mb-4"
+                    disabled={loading}
+                  >
+                    {loading ? 'Verifying...' : isLoginOtp ? 'Verify & Login' : 'Verify Email'}
+                  </Button>
+                </form>
 
-                  {error && <Alert color="danger" className="py-2 mb-3">{error}</Alert>}
-                  {success && <Alert color="success" className="py-2 mb-3">{success}</Alert>}
+                <p className="text-muted mb-3">
+                  Didn't receive the code?{' '}
+                  <span
+                    className={`otp-resend-link ${resending ? 'disabled' : ''}`}
+                    onClick={!resending ? handleResend : undefined}
+                  >
+                    {resending ? 'Sending...' : 'Resend Code'}
+                  </span>
+                </p>
 
-                  <form onSubmit={handleSubmit}>
-                    <FormGroup className="mb-4">
-                      <Label className="form-label fw-medium mb-3">Verification Code</Label>
-                      <div className="otp-input-group">
-                        {otp.map((digit, index) => (
-                          <input
-                            key={index}
-                            ref={el => inputRefs.current[index] = el}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleChange(index, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(index, e)}
-                            onPaste={handlePaste}
-                            className="otp-input"
-                            disabled={loading}
-                            autoFocus={index === 0}
-                          />
-                        ))}
-                      </div>
-                    </FormGroup>
-
-                    <Button
-                      type="submit"
-                      className="gradient-primary border-0 w-100 auth-submit-btn mb-3"
-                      disabled={loading}
-                    >
-                      {loading ? 'Verifying...' : content.buttonText}
-                    </Button>
-
-                    <div className="text-center">
-                      <span className="text-muted small">Didn't receive the code?</span>{' '}
-                      <Button
-                        color="link"
-                        className="p-0 auth-link"
-                        onClick={handleResend}
-                        disabled={resending}
-                      >
-                        {resending ? 'Sending...' : 'Resend Code'}
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              </Card>
-            </div>
+                <Link to={isLoginOtp ? '/login' : '/signup'} className="auth-link">
+                  {isLoginOtp ? '← Back to Login' : '← Back to Sign Up'}
+                </Link>
+              </CardBody>
+            </Card>
           </Col>
         </Row>
       </Container>

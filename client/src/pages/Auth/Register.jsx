@@ -1,62 +1,77 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button } from 'reactstrap';
-import { Link } from 'react-router-dom';
+import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button, Alert } from 'reactstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLeftPanel from './components/AuthLeftPanel';
 import SocialLoginButtons from './components/SocialLoginButtons';
 import './Auth.css';
 
 export default function Register() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  if (formData.password !== formData.confirmPassword) {
-    setError('Passwords do not match');
-    setLoading(false);
-    return;
-  }
-
-  try {
-    const response = await fetch('http://localhost:8000/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password
-      })
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Navigate to OTP verification page
-      navigate('/verify-otp', { state: { email: formData.email } });
-    } else {
-      setError(data.message || 'Registration failed');
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
-  } catch (err) {
-    setError('Something went wrong. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        navigate('/verify-otp', { 
+          state: { 
+            email: formData.email,
+            isLoginOtp: false 
+          } 
+        });
+      } else {
+        setError(data.message || 'Registration failed');
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleLogin = () => {
     console.log('Google signup');
@@ -81,6 +96,8 @@ export default function Register() {
                     <p className="text-muted mb-0">Get started with sentiment analysis</p>
                   </div>
 
+                  {error && <Alert color="danger" className="py-2 mb-3">{error}</Alert>}
+
                   <SocialLoginButtons 
                     onGoogleClick={handleGoogleLogin}
                     onFacebookClick={handleFacebookLogin}
@@ -101,6 +118,7 @@ export default function Register() {
                         value={formData.fullName}
                         onChange={handleChange}
                         className="auth-input"
+                        required
                       />
                     </FormGroup>
 
@@ -114,6 +132,7 @@ export default function Register() {
                         value={formData.email}
                         onChange={handleChange}
                         className="auth-input"
+                        required
                       />
                     </FormGroup>
 
@@ -127,15 +146,31 @@ export default function Register() {
                         value={formData.password}
                         onChange={handleChange}
                         className="auth-input"
+                        required
                       />
                       <small className="text-muted">Must be at least 8 characters</small>
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label for="confirmPassword" className="fw-medium mb-2">Confirm Password</Label>
+                      <Input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="auth-input"
+                        required
+                      />
                     </FormGroup>
 
                     <Button 
                       type="submit" 
                       className="auth-submit-btn gradient-primary border-0 w-100 mt-3"
+                      disabled={loading}
                     >
-                      Create Account
+                      {loading ? 'Creating Account...' : 'Create Account'}
                     </Button>
                   </Form>
 
