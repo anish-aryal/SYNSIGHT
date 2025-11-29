@@ -2,16 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Container, Row, Col, Card, CardBody, Button, Alert } from 'reactstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ShieldCheck, AlertTriangle } from 'lucide-react';
-
+import { useAuth } from '../../api/context/AuthContext';
 import './Auth.css';
 
 export default function VerifyOTP() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { verifyOtp, resendOtp } = useAuth();
 
   const email = location.state?.email || '';
   const userId = location.state?.userId || '';
   const isLoginOtp = location.state?.isLoginOtp === true;
+  const from = location.state?.from || '/dashboard';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -76,29 +78,20 @@ export default function VerifyOTP() {
     setLoading(true);
 
     try {
-      const requestBody = isLoginOtp
+      const payload = isLoginOtp
         ? { userId, otp: otpCode }
         : { email, otp: otpCode };
 
-      const response = await fetch('http://localhost:8000/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await response.json();
+      const data = await verifyOtp(payload);
 
       if (data.success) {
         setSuccess(isLoginOtp ? 'Login successful!' : 'Email verified successfully!');
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.data));
-
-        setTimeout(() => navigate('/dashboard'), 1500);
+        setTimeout(() => navigate(from, { replace: true }), 1500);
       } else {
         setError(data.message || 'Verification failed');
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -110,15 +103,8 @@ export default function VerifyOTP() {
     setResending(true);
 
     try {
-      const requestBody = isLoginOtp ? { userId } : { email };
-
-      const response = await fetch('http://localhost:8000/api/auth/resend-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await response.json();
+      const payload = isLoginOtp ? { userId } : { email };
+      const data = await resendOtp(payload);
 
       if (data.success) {
         setSuccess('Verification code sent successfully!');
@@ -128,7 +114,7 @@ export default function VerifyOTP() {
         setError(data.message || 'Failed to resend code');
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setResending(false);
     }

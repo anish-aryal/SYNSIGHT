@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button, Alert } from 'reactstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../api/context/AuthContext';
 import AuthLeftPanel from './components/AuthLeftPanel';
 import SocialLoginButtons from './components/SocialLoginButtons';
 import './Auth.css';
 
 export default function Login() {
   const navigate = useNavigate();
-  
+  const location = useLocation();
+  const { login } = useAuth();
+
+  const from = location.state?.from?.pathname || '/dashboard';
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -29,47 +34,35 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
+      const data = await login(formData);
 
       if (data.success) {
         if (data.requiresOtp) {
-          // 2FA enabled, navigate to OTP verification
-          navigate('/verify-otp', { 
-            state: { 
-              userId: data.userId, 
+          navigate('/verify-otp', {
+            state: {
+              userId: data.userId,
               email: data.email,
-              isLoginOtp: true 
-            } 
+              isLoginOtp: true,
+              from
+            }
           });
         } else {
-          // No 2FA, proceed to dashboard
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.data));
-          navigate('/dashboard');
+          navigate(from, { replace: true });
         }
       } else {
         if (data.requiresVerification) {
-          // Email not verified, redirect to OTP verification
-          navigate('/verify-otp', { 
-            state: { 
-              email: formData.email,
-              isLoginOtp: false 
-            } 
+          navigate('/verify-otp', {
+            state: {
+              email: data.email || formData.email,
+              isLoginOtp: false
+            }
           });
         } else {
           setError(data.message || 'Login failed');
         }
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -100,7 +93,7 @@ export default function Login() {
 
                   {error && <Alert color="danger" className="py-2 mb-3">{error}</Alert>}
 
-                  <SocialLoginButtons 
+                  <SocialLoginButtons
                     onGoogleClick={handleGoogleLogin}
                     onFacebookClick={handleFacebookLogin}
                   />
@@ -143,8 +136,8 @@ export default function Login() {
                       />
                     </FormGroup>
 
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="auth-submit-btn gradient-primary border-0 w-100 mt-4"
                       disabled={loading}
                     >

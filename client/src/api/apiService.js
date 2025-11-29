@@ -1,15 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL:'http://localhost:8000/api',
 });
 
-// Request interceptor - Add token to headers
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -18,25 +13,29 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle errors globally
+// Response interceptor
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => response,
   (error) => {
-    const message = error.response?.data?.message || 'Something went wrong';
-    
-    // Handle 401 Unauthorized - Token expired
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const data = error.response?.data || {};
+
+    // Token expired or invalid - clear session and redirect
+    if (status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return Promise.reject({ message: 'Session expired. Please login again.' });
     }
 
-    return Promise.reject({ message, status: error.response?.status });
+    return Promise.reject({
+      message: data.message || 'Something went wrong',
+      status,
+      ...data
+    });
   }
 );
 
