@@ -81,6 +81,39 @@ export default function ProfileSettings() {
     }
   };
 
+  const validateForm = () => {
+    // Validate full name (required)
+    if (!formData.fullName || !formData.fullName.trim()) {
+      showError('Full name is required');
+      return false;
+    }
+
+    // Validate full name length
+    if (formData.fullName.trim().length < 2) {
+      showError('Full name must be at least 2 characters');
+      return false;
+    }
+
+    if (formData.fullName.trim().length > 100) {
+      showError('Full name must not exceed 100 characters');
+      return false;
+    }
+
+    // Validate company length if provided
+    if (formData.company && formData.company.trim().length > 100) {
+      showError('Company name must not exceed 100 characters');
+      return false;
+    }
+
+    // Validate role length if provided
+    if (formData.role && formData.role.trim().length > 100) {
+      showError('Role must not exceed 100 characters');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSave = async () => {
     // Check if there are any changes
     if (!hasChanges) {
@@ -88,13 +121,18 @@ export default function ProfileSettings() {
       return;
     }
 
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     
     try {
       const payload = {
-        fullName: formData.fullName,
-        company: formData.company,
-        role: formData.role,
+        fullName: formData.fullName.trim(),
+        company: formData.company.trim(),
+        role: formData.role.trim(),
         avatar: avatarUrl
       };
 
@@ -102,23 +140,18 @@ export default function ProfileSettings() {
       
       if (response.success) {
         updateUser(response.data);
-        showSuccess('Profile updated successfully!');
+        showSuccess(response.message || 'Profile updated successfully!');
         setHasChanges(false);
       }
     } catch (error) {
-      showError(error.message || 'Failed to update profile');
+      // Display backend error message
+      showError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    // Check if there are any changes
-    if (!hasChanges) {
-      showInfo('No changes to cancel');
-      return;
-    }
-
     if (user) {
       setFormData({
         fullName: user.fullName || user.name || '',
@@ -206,6 +239,7 @@ export default function ProfileSettings() {
               color="light" 
               className="border-1 px-3 py-2 mb-2"
               onClick={handleAvatarClick}
+              disabled={loading}
             >
               Change Avatar
             </Button>
@@ -225,7 +259,9 @@ export default function ProfileSettings() {
 
         <Form>
           <FormGroup>
-            <Label for="fullName" className="fw-medium mb-2">Full Name</Label>
+            <Label for="fullName" className="fw-medium mb-2">
+              Full Name <span className="text-danger">*</span>
+            </Label>
             <Input
               type="text"
               id="fullName"
@@ -233,6 +269,9 @@ export default function ProfileSettings() {
               value={formData.fullName}
               onChange={handleChange}
               className="bg-light border-0"
+              disabled={loading}
+              required
+              maxLength={100}
             />
           </FormGroup>
 
@@ -260,6 +299,8 @@ export default function ProfileSettings() {
               onChange={handleChange}
               placeholder="Your company name"
               className="bg-light border-0"
+              disabled={loading}
+              maxLength={100}
             />
           </FormGroup>
 
@@ -273,6 +314,8 @@ export default function ProfileSettings() {
               onChange={handleChange}
               placeholder="Your role"
               className="bg-light border-0"
+              disabled={loading}
+              maxLength={100}
             />
           </FormGroup>
         </Form>
@@ -280,14 +323,16 @@ export default function ProfileSettings() {
 
       <CardFooter className="bg-white border-top pt-4">
         <div className="d-flex justify-content-end gap-3">
-          <Button 
-            color="light" 
-            className="border-1 border-secondary-subtle px-4"
-            onClick={handleCancel}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
+          {hasChanges && (
+            <Button 
+              color="light" 
+              className="border-1 border-secondary-subtle px-4"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          )}
           <Button 
             className="gradient-primary border-0 px-4"
             onClick={handleSave}

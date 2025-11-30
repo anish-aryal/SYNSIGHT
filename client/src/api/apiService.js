@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL:'http://localhost:8000/api',
+  baseURL: 'http://localhost:8000/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 // Request interceptor
@@ -21,21 +24,27 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const data = error.response?.data || {};
+    const url = error.config?.url || '';
 
-    // Token expired or invalid - clear session and redirect
-    if (status === 401) {
+    console.log('API Interceptor Error:', {
+      status,
+      url,
+      isAuthRoute: url.includes('/auth/'),
+      shouldClearSession: status === 401 && !url.includes('/auth/')
+    });
+
+    // ONLY clear session on 401 from PROTECTED routes (NOT from /auth/ routes)
+    if (status === 401 && !url.includes('/auth/')) {
+      console.log('Session expired - clearing and redirecting');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-      return Promise.reject({ message: 'Session expired. Please login again.' });
+    } else {
+      console.log('Not clearing session - auth route or not 401');
     }
 
-    return Promise.reject({
-      message: data.message || 'Something went wrong',
-      status,
-      ...data
-    });
+    // Always reject with the original error
+    return Promise.reject(error);
   }
 );
 

@@ -9,7 +9,7 @@ import './Auth.css';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, authLoading } = useAuth();
 
   const from = location.state?.from?.pathname || '/dashboard';
 
@@ -18,7 +18,6 @@ export default function Login() {
     password: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -31,40 +30,45 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
     try {
       const data = await login(formData);
 
-      if (data.success) {
-        if (data.requiresOtp) {
-          navigate('/verify-otp', {
-            state: {
-              userId: data.userId,
-              email: data.email,
-              isLoginOtp: true,
-              from
-            }
-          });
-        } else {
-          navigate(from, { replace: true });
-        }
-      } else {
-        if (data.requiresVerification) {
-          navigate('/verify-otp', {
-            state: {
-              email: data.email || formData.email,
-              isLoginOtp: false
-            }
-          });
-        } else {
-          setError(data.message || 'Login failed');
-        }
+      // Case 1: Account not verified
+      if (data?.requiresVerification) {
+        navigate('/verify-otp', {
+          state: {
+            email: data.email || formData.email,
+            isLoginOtp: false
+          }
+        });
+        return;
       }
+
+      // Case 2: 2FA enabled - needs OTP
+      if (data?.requiresOtp) {
+        navigate('/verify-otp', {
+          state: {
+            userId: data.userId,
+            email: data.email,
+            isLoginOtp: true,
+            from
+          }
+        });
+        return;
+      }
+
+      // Case 3: Successful login without 2FA
+      if (data?.success) {
+        navigate(from, { replace: true });
+        return;
+      }
+
+      // Fallback error
+      setError('Login failed. Please try again.');
+
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -91,7 +95,11 @@ export default function Login() {
                     <p className="text-muted mb-0">Sign in to continue your analysis</p>
                   </div>
 
-                  {error && <Alert color="danger" className="py-2 mb-3">{error}</Alert>}
+                  {error && (
+                    <Alert color="danger" className="py-2 mb-3">
+                      {error}
+                    </Alert>
+                  )}
 
                   <SocialLoginButtons
                     onGoogleClick={handleGoogleLogin}
@@ -113,6 +121,7 @@ export default function Login() {
                         value={formData.email}
                         onChange={handleChange}
                         className="auth-input"
+                        disabled={authLoading}
                         required
                       />
                     </FormGroup>
@@ -132,6 +141,7 @@ export default function Login() {
                         value={formData.password}
                         onChange={handleChange}
                         className="auth-input"
+                        disabled={authLoading}
                         required
                       />
                     </FormGroup>
@@ -139,9 +149,9 @@ export default function Login() {
                     <Button
                       type="submit"
                       className="auth-submit-btn gradient-primary border-0 w-100 mt-4"
-                      disabled={loading}
+                      disabled={authLoading}
                     >
-                      {loading ? 'Signing in...' : 'Sign In'}
+                      {authLoading ? 'Signing in...' : 'Sign In'}
                     </Button>
                   </Form>
 

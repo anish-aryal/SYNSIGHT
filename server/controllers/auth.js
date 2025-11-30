@@ -173,9 +173,6 @@ export const resendOTP = async (req, res) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -189,13 +186,14 @@ export const login = async (req, res) => {
     // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return sendErrorResponse(res, 'Invalid credentials', 401);
+      // Don't reveal whether email exists or not - use same message as password mismatch
+      return sendErrorResponse(res, 'Email or Password is incorrect', 401);
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return sendErrorResponse(res, 'Invalid credentials', 401);
+      return sendErrorResponse(res, 'Email or Password is incorrect', 401);
     }
 
     // Check if verified
@@ -220,10 +218,10 @@ export const login = async (req, res) => {
     }
 
     // If 2FA not enabled, proceed with normal login
-    sendTokenResponse(user, res, 'Login successful');
+    return sendTokenResponse(user, res, 'Login successful');
   } catch (error) {
     console.error('Login error:', error);
-    sendErrorResponse(res, error.message, 500);
+    return sendErrorResponse(res, 'An error occurred during login', 500);
   }
 };
 
