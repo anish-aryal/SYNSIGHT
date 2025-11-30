@@ -1,14 +1,54 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardBody, CardFooter, Button, Label } from 'reactstrap';
-import { Input } from 'reactstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardBody, CardFooter, Button, Label, Input, Spinner } from 'reactstrap';
+import { useAuth } from '../../../api/context/AuthContext';
+import { useApp } from '../../../api/context/AppContext';
+import { updatePreferences } from '../../../api/services/profileService';
 
 export default function NotificationsSettings() {
+  const { user, updateUser } = useAuth();
+  const { showSuccess, showError, showInfo } = useApp();
+
   const [notifications, setNotifications] = useState({
-    emailReports: true,
+    emailNotifications: true,
     sentimentAlerts: true,
     weeklyDigest: false,
     productUpdates: true
   });
+
+  const [originalNotifications, setOriginalNotifications] = useState({
+    emailNotifications: true,
+    sentimentAlerts: true,
+    weeklyDigest: false,
+    productUpdates: true
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Initialize with user preferences
+  useEffect(() => {
+    if (user?.preferences) {
+      const prefs = {
+        emailNotifications: user.preferences.emailNotifications ?? true,
+        sentimentAlerts: user.preferences.sentimentAlerts ?? true,
+        weeklyDigest: user.preferences.weeklyDigest ?? false,
+        productUpdates: user.preferences.productUpdates ?? true
+      };
+      setNotifications(prefs);
+      setOriginalNotifications(prefs);
+    }
+  }, [user]);
+
+  // Check for changes
+  useEffect(() => {
+    const changed = 
+      notifications.emailNotifications !== originalNotifications.emailNotifications ||
+      notifications.sentimentAlerts !== originalNotifications.sentimentAlerts ||
+      notifications.weeklyDigest !== originalNotifications.weeklyDigest ||
+      notifications.productUpdates !== originalNotifications.productUpdates;
+    
+    setHasChanges(changed);
+  }, [notifications, originalNotifications]);
 
   const handleToggle = (name) => {
     setNotifications({
@@ -17,25 +57,48 @@ export default function NotificationsSettings() {
     });
   };
 
-  const handleSave = () => {
-    console.log('Saving notifications:', notifications);
+  const handleSave = async () => {
+    // Check if there are any changes
+    if (!hasChanges) {
+      showInfo('No changes to save');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await updatePreferences(notifications);
+
+      if (response.success) {
+        updateUser(response.data);
+        setOriginalNotifications(notifications);
+        showSuccess('Notification preferences updated successfully!');
+        setHasChanges(false);
+      }
+    } catch (error) {
+      showError(error.message || 'Failed to update notification preferences');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    setNotifications({
-      emailReports: true,
-      sentimentAlerts: true,
-      weeklyDigest: false,
-      productUpdates: true
-    });
+    // Check if there are any changes
+    if (!hasChanges) {
+      showInfo('No changes to cancel');
+      return;
+    }
+
+    setNotifications(originalNotifications);
+    showInfo('Changes discarded');
   };
 
   const notificationItems = [
     {
-      id: 'emailReports',
-      title: 'Email Reports',
-      description: 'Receive email reports when analysis is complete',
-      value: notifications.emailReports
+      id: 'emailNotifications',
+      title: 'Email Notifications',
+      description: 'Receive email notifications for important updates',
+      value: notifications.emailNotifications
     },
     {
       id: 'sentimentAlerts',
@@ -88,10 +151,11 @@ export default function NotificationsSettings() {
                 id={item.id}
                 checked={item.value}
                 onChange={() => handleToggle(item.id)}
+                disabled={loading}
                 style={{ 
                   width: '3rem', 
                   height: '1.5rem',
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               />
             </div>
@@ -105,14 +169,23 @@ export default function NotificationsSettings() {
             color="light" 
             className="border-1 border-secondary-subtle px-4"
             onClick={handleCancel}
+            disabled={loading}
           >
             Cancel
           </Button>
           <Button 
             className="gradient-primary border-0 px-4"
             onClick={handleSave}
+            disabled={loading}
           >
-            Save Changes
+            {loading ? (
+              <>
+                <Spinner size="sm" className="me-2" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </Button>
         </div>
       </CardFooter>

@@ -1,17 +1,50 @@
-import React, { useState, useRef } from 'react';
-import { Card, CardHeader, CardBody, CardFooter, Form, FormGroup, Label, Input, Button } from 'reactstrap';
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardHeader, CardBody, CardFooter, Form, FormGroup, Label, Input, Button, Spinner } from 'reactstrap';
 import { Camera } from 'lucide-react';
+import { useAuth } from '../../../api/context/AuthContext';
+import { useApp } from '../../../api/context/AppContext';
+import { updateProfile } from '../../../api/services/profileService';
 
 export default function ProfileSettings() {
+  const { user, updateUser } = useAuth();
+  const { showSuccess, showError, showInfo } = useApp();
+  
   const [formData, setFormData] = useState({
-    fullName: 'sfdsdf',
-    email: 'sfdsdf@gmail.com',
+    fullName: '',
+    email: '',
     company: '',
     role: ''
   });
 
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Initialize form with user data
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || user.name || '',
+        email: user.email || '',
+        company: user.company || '',
+        role: user.role || ''
+      });
+      setAvatarUrl(user.avatar || null);
+    }
+  }, [user]);
+
+  // Check for changes
+  useEffect(() => {
+    if (user) {
+      const fullNameChanged = formData.fullName !== (user.fullName || user.name || '');
+      const companyChanged = formData.company !== (user.company || '');
+      const roleChanged = formData.role !== (user.role || '');
+      const avatarChanged = avatarUrl !== (user.avatar || null);
+
+      setHasChanges(fullNameChanged || companyChanged || roleChanged || avatarChanged);
+    }
+  }, [formData, avatarUrl, user]);
 
   const handleChange = (e) => {
     setFormData({
@@ -28,21 +61,18 @@ export default function ProfileSettings() {
     const file = e.target.files[0];
     
     if (file) {
-      // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
       if (!validTypes.includes(file.type)) {
-        alert('Please upload a JPG, PNG, or GIF image.');
+        showError('Please upload a JPG, PNG, or GIF image.');
         return;
       }
 
-      // Validate file size (2MB)
       const maxSize = 2 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('File size must be less than 2MB.');
+        showError('File size must be less than 2MB.');
         return;
       }
 
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarUrl(reader.result);
@@ -51,24 +81,63 @@ export default function ProfileSettings() {
     }
   };
 
-  const handleSave = () => {
-    console.log('Saving profile:', formData);
-  };
+  const handleSave = async () => {
+    // Check if there are any changes
+    if (!hasChanges) {
+      showInfo('No changes to save');
+      return;
+    }
 
-  const handleCancel = () => {
-    setFormData({
-      fullName: 'sfdsdf',
-      email: 'sfdsdf@gmail.com',
-      company: '',
-      role: ''
-    });
-    setAvatarUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    setLoading(true);
+    
+    try {
+      const payload = {
+        fullName: formData.fullName,
+        company: formData.company,
+        role: formData.role,
+        avatar: avatarUrl
+      };
+
+      const response = await updateProfile(payload);
+      
+      if (response.success) {
+        updateUser(response.data);
+        showSuccess('Profile updated successfully!');
+        setHasChanges(false);
+      }
+    } catch (error) {
+      showError(error.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleCancel = () => {
+    // Check if there are any changes
+    if (!hasChanges) {
+      showInfo('No changes to cancel');
+      return;
+    }
+
+    if (user) {
+      setFormData({
+        fullName: user.fullName || user.name || '',
+        email: user.email || '',
+        company: user.company || '',
+        role: user.role || ''
+      });
+      setAvatarUrl(user.avatar || null);
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    showInfo('Changes discarded');
+  };
+
   const getInitials = (name) => {
+    if (!name) return 'U';
     return name
       .split(' ')
       .map(word => word[0])
@@ -81,13 +150,12 @@ export default function ProfileSettings() {
     <Card className="p-3 border-1 shadow-sm">
       <CardHeader className="bg-white border-bottom py-3">
         <span className="fw-semibold mb-1" style={{ fontSize: '20px' }}>Profile Information</span>
-        <p className="text-muted mb-0" >
+        <p className="text-muted mb-0">
           Update your personal details
         </p>
       </CardHeader>
 
       <CardBody>
-        {/* Avatar Section */}
         <div className="d-flex align-items-center gap-3 mb-4 py-4">
           <div 
             className="position-relative"
@@ -119,7 +187,6 @@ export default function ProfileSettings() {
               </div>
             )}
             
-            {/* Camera Icon Overlay */}
             <div 
               className="position-absolute bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
               style={{ 
@@ -147,7 +214,6 @@ export default function ProfileSettings() {
             </p>
           </div>
 
-          {/* Hidden File Input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -179,7 +245,9 @@ export default function ProfileSettings() {
               value={formData.email}
               onChange={handleChange}
               className="bg-light border-0"
+              disabled
             />
+            <small className="text-muted">Email cannot be changed</small>
           </FormGroup>
 
           <FormGroup>
@@ -216,14 +284,23 @@ export default function ProfileSettings() {
             color="light" 
             className="border-1 border-secondary-subtle px-4"
             onClick={handleCancel}
+            disabled={loading}
           >
             Cancel
           </Button>
           <Button 
             className="gradient-primary border-0 px-4"
             onClick={handleSave}
+            disabled={loading}
           >
-            Save Changes
+            {loading ? (
+              <>
+                <Spinner size="sm" className="me-2" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </Button>
         </div>
       </CardFooter>

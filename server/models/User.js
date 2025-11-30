@@ -50,7 +50,20 @@ const userSchema = new mongoose.Schema({
     default: ''
   },
   preferences: {
+    // Notification Preferences
     emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    sentimentAlerts: {
+      type: Boolean,
+      default: true
+    },
+    weeklyDigest: {
+      type: Boolean,
+      default: false
+    },
+    productUpdates: {
       type: Boolean,
       default: true
     },
@@ -61,6 +74,18 @@ const userSchema = new mongoose.Schema({
     mentionAlerts: {
       type: Boolean,
       default: true
+    },
+    
+    // Application Preferences
+    defaultTimeRange: {
+      type: String,
+      default: 'last7days',
+      enum: ['last7days', 'last30days', 'last90days', 'lastyear', 'alltime']
+    },
+    defaultPlatform: {
+      type: String,
+      default: 'all',
+      enum: ['all', 'twitter', 'facebook', 'instagram', 'linkedin', 'reddit']
     },
     darkMode: {
       type: Boolean,
@@ -75,6 +100,8 @@ const userSchema = new mongoose.Schema({
       type: String,
       default: 'UTC'
     },
+    
+    // Security Preferences
     twoFactorEnabled: {
       type: Boolean,
       default: true

@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppProvider } from './api/context/AppContext';  // Import FIRST
 import { AuthProvider } from './api/context/AuthContext';
+import NotificationToast from './components/NotificationToast/NotificationToast';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestRoute from './components/GuestRoute';
 import AppLayout from './layouts/AppLayout';
@@ -20,35 +22,38 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Router>
-      <AuthProvider>
-        <Routes>
-          {/* Public Route */}
-          <Route path="/" element={<Landing />} />
+    <AppProvider>
+      <Router>
+        <AuthProvider>
+          <NotificationToast />
+          <Routes>
+            {/* Public Route */}
+            <Route path="/" element={<Landing />} />
 
-          {/* Guest Only Routes */}
-          <Route element={<GuestRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Register />} />
-            <Route path="/verify-otp" element={<VerifyOTP />} />
-          </Route>
-
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/history" element={<div className="p-4">History Page</div>} />
-              <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
-              <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
-              <Route path="/settings" element={<Settings />} />
+            {/* Guest Only Routes */}
+            <Route element={<GuestRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Register />} />
+              <Route path="/verify-otp" element={<VerifyOTP />} />
             </Route>
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </Router>
+
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/history" element={<div className="p-4">History Page</div>} />
+                <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
+                <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </Router>
+    </AppProvider>
   </React.StrictMode>
 );

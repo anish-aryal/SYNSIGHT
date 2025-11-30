@@ -4,6 +4,7 @@ import PageHeader from '../../components/PageHeader/PageHeader';
 import SettingsTabs from './components/SettingsTabs';
 import ProfileSettings from './components/ProfileSettings';
 import NotificationsSettings from './components/NotificationsSettings';
+import PreferencesSettings from './components/PreferenceSettings';
 import './Settings.css';
 
 export default function Settings() {
@@ -16,7 +17,7 @@ export default function Settings() {
       case 'notifications':
         return <NotificationsSettings />;
       case 'preferences':
-        return <div className="text-center py-5 text-muted">Preferences coming soon...</div>;
+        return <PreferencesSettings />;
       case 'security':
         return <div className="text-center py-5 text-muted">Security settings coming soon...</div>;
       case 'billing':

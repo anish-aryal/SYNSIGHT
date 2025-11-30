@@ -18,10 +18,45 @@ export const protect = async (req, res, next) => {
   }
 
   try {
+    // Verify token (automatically checks expiration)
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id);
+    
+    // Find user
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if user is verified
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email to continue'
+      });
+    }
+
+    req.user = user;
     next();
   } catch (error) {
+    // Handle specific JWT errors
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Session expired. Please login again.'
+      });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token. Please login again.'
+      });
+    }
+
     return res.status(401).json({
       success: false,
       message: 'Not authorized to access this route'
