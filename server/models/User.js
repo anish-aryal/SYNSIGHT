@@ -28,7 +28,11 @@ const userSchema = new mongoose.Schema({
   expiresAt: {
     type: Date,
     default: function() {
-      return new Date(Date.now() + 24 * 60 * 60 * 1000);
+      // Only set expiry for unverified users
+      if (!this.isVerified) {
+        return new Date(Date.now() + 24 * 60 * 60 * 1000);
+      }
+      return undefined;
     }
   },
   otp: {
@@ -130,8 +134,12 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// TTL Index - Auto-delete when expiresAt is reached
-userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// TTL Index - ONLY delete unverified users after expiresAt
+// The partialFilterExpression ensures verified users are NEVER deleted
+userSchema.index({ expiresAt: 1 }, { 
+  expireAfterSeconds: 0,
+  partialFilterExpression: { isVerified: false }
+});
 
 // Hash password before saving
 userSchema.pre('save', async function() {

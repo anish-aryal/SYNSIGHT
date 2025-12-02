@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button, Alert } from 'reactstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../api/context/AuthContext';
+import { useApp } from '../../api/context/AppContext';
 import AuthLeftPanel from './components/AuthLeftPanel';
 import SocialLoginButtons from './components/SocialLoginButtons';
 import './Auth.css';
@@ -10,6 +11,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, authLoading } = useAuth();
+  const { showError } = useApp();
 
   const from = location.state?.from?.pathname || '/dashboard';
 
@@ -18,6 +20,19 @@ export default function Login() {
     password: ''
   });
   const [error, setError] = useState('');
+
+  // Check for session expiry on mount
+  useEffect(() => {
+    const sessionExpired = sessionStorage.getItem('sessionExpired');
+    if (sessionExpired === 'true') {
+      // Show in both Alert and Toast
+      setError('Session expired. Please login again.');
+      showError('Session expired. Please login again.');
+      
+      // Clear the flag
+      sessionStorage.removeItem('sessionExpired');
+    }
+  }, [showError]);
 
   const handleChange = (e) => {
     setFormData({
@@ -65,7 +80,7 @@ export default function Login() {
       }
 
       // Fallback error
-      setError('Login failed. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
 
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');

@@ -26,21 +26,19 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url || '';
 
-    console.log('API Interceptor Error:', {
-      status,
-      url,
-      isAuthRoute: url.includes('/auth/'),
-      shouldClearSession: status === 401 && !url.includes('/auth/')
-    });
-
     // ONLY clear session on 401 from PROTECTED routes (NOT from /auth/ routes)
     if (status === 401 && !url.includes('/auth/')) {
       console.log('Session expired - clearing and redirecting');
+      
+      // Clear localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      
+      // Set session expired flag
+      sessionStorage.setItem('sessionExpired', 'true');
+      
+      // Redirect to login
       window.location.href = '/login';
-    } else {
-      console.log('Not clearing session - auth route or not 401');
     }
 
     // Always reject with the original error
