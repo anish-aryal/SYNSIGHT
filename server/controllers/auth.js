@@ -15,6 +15,7 @@ import {
   sendOtpRequiredResponse,
   sendVerificationRequiredResponse
 } from '../helpers/responseHelpers.js';
+import Session from '../models/Session.js';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -128,20 +129,17 @@ export const verifyOTP = async (req, res) => {
         console.error('Welcome email error:', emailError);
       }
 
-      return sendTokenResponse(user, res, 'Email verified successfully');
+      return await sendTokenResponse(user, res, 'Email verified successfully',200, req);
     }
 
     // This is login OTP verification
-    sendTokenResponse(user, res, 'Login successful');
+    sendTokenResponse(user, res, 'Login successful',200,req);
   } catch (error) {
     console.error('Verify OTP error:', error);
     sendErrorResponse(res, error.message, 500);
   }
 };
 
-// @desc    Resend OTP (for both registration and login)
-// @route   POST /api/auth/resend-otp
-// @access  Public
 export const resendOTP = async (req, res) => {
   try {
     const { email, userId } = req.body;
@@ -186,7 +184,6 @@ export const login = async (req, res) => {
     // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      // Don't reveal whether email exists or not - use same message as password mismatch
       return sendErrorResponse(res, 'Email or Password is incorrect', 401);
     }
 
@@ -218,28 +215,35 @@ export const login = async (req, res) => {
     }
 
     // If 2FA not enabled, proceed with normal login
-    return sendTokenResponse(user, res, 'Login successful');
+    return await sendTokenResponse(user, res, 'Login successful', 200, req);
   } catch (error) {
     console.error('Login error:', error);
     return sendErrorResponse(res, 'An error occurred during login', 500);
   }
 };
 
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Private
 export const logout = async (req, res) => {
-  res.cookie('token', '', {
-    httpOnly: true,
-    expires: new Date(0)
-  });
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
 
-  sendSuccessResponse(res, 'Logged out successfully');
+    // Delete the session from database
+    if (token) {
+      await Session.deleteOne({ token, userId: req.user._id });
+    }
+
+    // Clear cookie
+    res.cookie('token', '', {
+      httpOnly: true,
+      expires: new Date(0)
+    });
+
+    sendSuccessResponse(res, 'Logged out successfully');
+  } catch (error) {
+    console.error('Logout error:', error);
+    sendErrorResponse(res, 'Logout failed', 500);
+  }
 };
 
-// @desc    Get current user
-// @route   GET /api/auth/me
-// @access  Private
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);

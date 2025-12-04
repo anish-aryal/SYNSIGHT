@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Session from '../models/Session.js';
 
 export const protect = async (req, res, next) => {
   let token;
@@ -21,6 +22,20 @@ export const protect = async (req, res, next) => {
     // Verify token (automatically checks expiration)
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
+    // Check if session exists in database
+    const session = await Session.findOne({ 
+      token, 
+      userId: decoded.id,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: 'Session expired or invalid. Please login again.'
+      });
+    }
+    
     // Find user
     const user = await User.findById(decoded.id);
     
@@ -40,6 +55,13 @@ export const protect = async (req, res, next) => {
     }
 
     req.user = user;
+
+    // Update session activity (optional - don't await to avoid slowing down requests)
+    Session.findOneAndUpdate(
+      { token, userId: user._id },
+      { lastActive: new Date() }
+    ).exec();
+
     next();
   } catch (error) {
     // Handle specific JWT errors

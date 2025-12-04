@@ -3,10 +3,9 @@ import {
   sendSuccessResponse,
   sendErrorResponse
 } from '../../helpers/responseHelpers.js';
+import Session from '../../models/Session.js';
+import { getTimeAgo } from '../../helpers/sessionhelpers.js';
 
-// @desc    Update user profile
-// @route   PUT /api/profile
-// @access  Private
 export const updateProfile = async (req, res) => {
   try {
     const { fullName, company, role, avatar } = req.body;
@@ -45,9 +44,6 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Update user preferences
-// @route   PUT /api/profile/preferences
-// @access  Private
 export const updatePreferences = async (req, res) => {
   try {
     const { 
@@ -120,9 +116,6 @@ export const updatePreferences = async (req, res) => {
   }
 };
 
-// @desc    Change password
-// @route   PUT /api/profile/change-password
-// @access  Private
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -163,9 +156,6 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// @desc    Delete user account
-// @route   DELETE /api/profile
-// @access  Private
 export const deleteAccount = async (req, res) => {
   try {
     const { password } = req.body;
@@ -201,9 +191,6 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-// @desc    Toggle Two-Factor Authentication
-// @route   PUT /api/profile/two-factor
-// @access  Private
 export const toggleTwoFactor = async (req, res) => {
   try {
     const { enabled } = req.body;
@@ -233,50 +220,65 @@ export const toggleTwoFactor = async (req, res) => {
   }
 };
 
-// @desc    Get Active Sessions
-// @route   GET /api/profile/sessions
-// @access  Private
 export const getActiveSessions = async (req, res) => {
   try {
-    // Mock data for now - In production, you'd fetch from a sessions collection/cache
-    const sessions = [
-      {
-        id: '1',
-        device: 'MacBook Pro',
-        browser: 'Chrome',
-        os: 'macOS',
-        lastActive: 'now',
-        isCurrent: true,
-        ipAddress: req.ip,
-        createdAt: new Date()
-      }
-    ];
+    const currentToken = req.headers.authorization?.split(' ')[1];
 
-    return sendSuccessResponse(res, 'Active sessions retrieved successfully', sessions);
+    // Get all active sessions for the user
+    const sessions = await Session.find({ 
+      userId: req.user._id,
+      expiresAt: { $gt: new Date() }
+    }).sort({ lastActive: -1 });
+
+    // Format sessions for frontend
+    const formattedSessions = sessions.map(session => ({
+      id: session._id.toString(),
+      device: session.device,
+      browser: session.browser,
+      os: session.os,
+      lastActive: getTimeAgo(session.lastActive),
+      isCurrent: session.token === currentToken,
+      ipAddress: session.ipAddress,
+      createdAt: session.createdAt
+    }));
+
+    return sendSuccessResponse(res, 'Active sessions retrieved successfully', formattedSessions);
   } catch (error) {
     console.error('Get active sessions error:', error);
     return sendErrorResponse(res, 'Failed to retrieve active sessions', 500);
   }
 };
 
-// @desc    Terminate Session
-// @route   DELETE /api/profile/sessions/:sessionId
-// @access  Private
+
 export const terminateSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
+    const currentToken = req.headers.authorization?.split(' ')[1];
 
     if (!sessionId) {
       return sendErrorResponse(res, 'Session ID is required', 400);
     }
 
-    // Mock implementation - In production, you'd:
-    // 1. Find the session in your sessions collection/cache
-    // 2. Verify it belongs to the current user
-    // 3. Delete the session
-    // 4. Invalidate the JWT token associated with that session
+    // Find the session
+    const session = await Session.findById(sessionId);
 
-    // For now, just return success
+    if (!session) {
+      return sendErrorResponse(res, 'Session not found', 404);
+    }
+
+    // Verify session belongs to current user
+    if (session.userId.toString() !== req.user._id.toString()) {
+      return sendErrorResponse(res, 'Unauthorized to terminate this session', 403);
+    }
+
+    // Prevent terminating current session
+    if (session.token === currentToken) {
+      return sendErrorResponse(res, 'Cannot terminate your current session. Please use logout instead.', 400);
+    }
+
+    // Delete the session
+    await Session.findByIdAndDelete(sessionId);
+
     return sendSuccessResponse(res, 'Session terminated successfully');
   } catch (error) {
     console.error('Terminate session error:', error);

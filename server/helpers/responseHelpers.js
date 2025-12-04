@@ -1,14 +1,26 @@
 import generateToken from '../utils/generateToken.js';
+import { createUserSession } from './sessionhelpers.js';
 
-export const sendTokenResponse = (user, res, message = 'Success', statusCode = 200) => {
+export const sendTokenResponse = async (user, res, message = 'Success', statusCode = 200, req = null) => {
   const token = generateToken(user._id);
+
+  console.log('🎫 Token generated for user:', user._id);
+  console.log('📨 req object present?', !!req);
+
+  // Create session if req is provided
+  if (req) {
+    console.log('🔄 Calling createUserSession...');
+    await createUserSession(user._id, token, req);
+  } else {
+    console.log('⚠️ No req object, skipping session creation');
+  }
 
   // Set cookie
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
   res.status(statusCode).json({
@@ -18,7 +30,6 @@ export const sendTokenResponse = (user, res, message = 'Success', statusCode = 2
     token
   });
 };
-
 export const sendSuccessResponse = (res, message, data = null, statusCode = 200) => {
   const response = {
     success: true,
