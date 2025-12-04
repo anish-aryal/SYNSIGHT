@@ -20,13 +20,43 @@ export const updatePreferences = async (payload) => {
   }
 };
 
-// Change Password
-export const changePassword = async (payload) => {
+// Update Password
+export const updatePassword = async (payload) => {
   try {
     const response = await api.put('/profile/change-password', payload);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || error.message || 'Failed to change password');
+    throw new Error(error.response?.data?.message || error.message || 'Failed to update password');
+  }
+};
+
+// Toggle Two-Factor Authentication
+export const toggleTwoFactor = async (enabled) => {
+  try {
+    const response = await api.put('/profile/two-factor', { enabled });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message || 'Failed to update two-factor authentication');
+  }
+};
+
+// Get Active Sessions
+export const getActiveSessions = async () => {
+  try {
+    const response = await api.get('/profile/sessions');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message || 'Failed to fetch active sessions');
+  }
+};
+
+// Terminate Session
+export const terminateSession = async (sessionId) => {
+  try {
+    const response = await api.delete(`/profile/sessions/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message || 'Failed to terminate session');
   }
 };
 

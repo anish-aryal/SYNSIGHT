@@ -200,3 +200,86 @@ export const deleteAccount = async (req, res) => {
     return sendErrorResponse(res, 'Failed to delete account', 500);
   }
 };
+
+// @desc    Toggle Two-Factor Authentication
+// @route   PUT /api/profile/two-factor
+// @access  Private
+export const toggleTwoFactor = async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    if (typeof enabled !== 'boolean') {
+      return sendErrorResponse(res, 'Invalid request. Enabled must be a boolean', 400);
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return sendErrorResponse(res, 'User not found', 404);
+    }
+
+    // Update two-factor status
+    user.twoFactorEnabled = enabled;
+    await user.save();
+
+    const message = enabled 
+      ? 'Two-factor authentication enabled successfully' 
+      : 'Two-factor authentication disabled successfully';
+
+    return sendSuccessResponse(res, message, user.getPublicProfile());
+  } catch (error) {
+    console.error('Toggle two-factor error:', error);
+    return sendErrorResponse(res, 'Failed to update two-factor authentication', 500);
+  }
+};
+
+// @desc    Get Active Sessions
+// @route   GET /api/profile/sessions
+// @access  Private
+export const getActiveSessions = async (req, res) => {
+  try {
+    // Mock data for now - In production, you'd fetch from a sessions collection/cache
+    const sessions = [
+      {
+        id: '1',
+        device: 'MacBook Pro',
+        browser: 'Chrome',
+        os: 'macOS',
+        lastActive: 'now',
+        isCurrent: true,
+        ipAddress: req.ip,
+        createdAt: new Date()
+      }
+    ];
+
+    return sendSuccessResponse(res, 'Active sessions retrieved successfully', sessions);
+  } catch (error) {
+    console.error('Get active sessions error:', error);
+    return sendErrorResponse(res, 'Failed to retrieve active sessions', 500);
+  }
+};
+
+// @desc    Terminate Session
+// @route   DELETE /api/profile/sessions/:sessionId
+// @access  Private
+export const terminateSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+      return sendErrorResponse(res, 'Session ID is required', 400);
+    }
+
+    // Mock implementation - In production, you'd:
+    // 1. Find the session in your sessions collection/cache
+    // 2. Verify it belongs to the current user
+    // 3. Delete the session
+    // 4. Invalidate the JWT token associated with that session
+
+    // For now, just return success
+    return sendSuccessResponse(res, 'Session terminated successfully');
+  } catch (error) {
+    console.error('Terminate session error:', error);
+    return sendErrorResponse(res, 'Failed to terminate session', 500);
+  }
+};
