@@ -4,7 +4,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
-import profileRoutes from './routes/profile.js'
+import profileRoutes from './routes/profile.js';
+import analysisRoutes from './sentimentAnalysis/routes/analysis.js';
 
 // Load env vars
 dotenv.config();
@@ -24,9 +25,8 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);  // Add this line
-
-
+app.use('/api/profile', profileRoutes);
+app.use('/api/analysis', analysisRoutes);  
 
 // Health check route
 app.get('/api/health', (req, res) => {
