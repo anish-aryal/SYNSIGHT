@@ -1,6 +1,6 @@
 import React from 'react';
-import { InputGroup, Input, Button } from 'reactstrap';
-import { Settings, Send } from 'lucide-react';
+import { Row, Col, Input, Button, InputGroup } from 'reactstrap';
+import { Send, SlidersHorizontal } from 'lucide-react';
 
 export default function SearchBar({ value, onChange, onSearch }) {
   const handleSubmit = (e) => {
@@ -11,25 +11,27 @@ export default function SearchBar({ value, onChange, onSearch }) {
   };
 
   return (
-    <div className="search-bar-wrapper">
-      <form onSubmit={handleSubmit}>
-        <InputGroup className="search-input-group">
-          <Input
-            type="text"
-            placeholder="Search for any keyword, brand, or topic..."
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="search-input fs-6"
-          />
-          <Button color="light" className="options-btn">
-            <Settings size={18} />
-            <span>Options</span>
-          </Button>
-          <Button color="dark" borsurf type="submit" className="send-btn rounded-2">
-            <Send size={20} />
-          </Button>
-        </InputGroup>
-      </form>
-    </div>
+    <Row className="search-bar-wrapper justify-content-center">
+      <Col xs={12}>
+        <form onSubmit={handleSubmit}>
+          <InputGroup className="search-input-group">
+            <Input
+              type="text"
+              placeholder="Ask about any topic, brand, or keyword..."
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="search-input border-0"
+            />
+            <Button color="link" className="options-btn">
+              <SlidersHorizontal size={16} />
+              <span>Options</span>
+            </Button>
+            <Button color="dark" type="submit" className="send-btn rounded-2">
+              <Send size={18} />
+            </Button>
+          </InputGroup>
+        </form>
+      </Col>
+    </Row>
   );
 }

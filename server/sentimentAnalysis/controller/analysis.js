@@ -365,3 +365,67 @@ export const getStatistics = async (req, res) => {
     return sendErrorResponse(res, 'Failed to fetch statistics', 500);
   }
 };
+export const analyzeBluesky = async (req, res) => {
+  try {
+    const { query, maxResults = 100 } = req.body;
+
+    if (!query || query.trim().length === 0) {
+      return sendErrorResponse(res, 'Search query is required', 400);
+    }
+
+    const startTime = Date.now();
+    const result = await SentimentOrchestrator.analyzeBluesky(query, maxResults);
+    const processingTime = Date.now() - startTime;
+
+    const dates = result.samplePosts.map(post => new Date(post.created_at));
+    const dateRange = {
+      start: new Date(Math.min(...dates)),
+      end: new Date(Math.max(...dates))
+    };
+
+    const analysis = await Analysis.create({
+      user: req.user._id,
+      query,
+      source: 'bluesky',
+      sentiment: {
+        overall: result.overall_sentiment,
+        scores: result.average_scores,
+        percentages: result.percentages,
+        distribution: result.sentiment_distribution
+      },
+      totalAnalyzed: result.total_analyzed,
+      insights: result.insights,
+      platformBreakdown: result.platformBreakdown,
+      timeAnalysis: result.timeAnalysis,
+      topKeywords: result.topKeywords,
+      samplePosts: result.samplePosts,
+      dateRange,
+      metadata: {
+        timestamp: result.timestamp,
+        processingTime,
+        platforms: ['bluesky']
+      }
+    });
+
+    return sendSuccessResponse(res, 'Bluesky analysis completed successfully', {
+      analysisId: analysis._id,
+      query,
+      source: 'bluesky',
+      sentiment: result.overall_sentiment,
+      percentages: result.percentages,
+      scores: result.average_scores,
+      distribution: result.sentiment_distribution,
+      totalAnalyzed: result.total_analyzed,
+      insights: result.insights,
+      platformBreakdown: result.platformBreakdown,
+      timeAnalysis: result.timeAnalysis,
+      topKeywords: result.topKeywords,
+      samplePosts: result.samplePosts,
+      dateRange,
+      processingTime
+    });
+  } catch (error) {
+    console.error('Analyze Bluesky error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to analyze Bluesky data', 500);
+  }
+};

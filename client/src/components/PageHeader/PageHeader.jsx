@@ -1,60 +1,81 @@
-import React from 'react';
-import { Button, InputGroup, Input } from 'reactstrap';
-import { Search, Plus } from 'lucide-react';
-import './PageHeader.css';
+import React from "react";
+import { Row, Col, Button, InputGroup, Input } from "reactstrap";
+import { Search, Plus } from "lucide-react";
 
-export default function PageHeader({ 
-  title, 
-  subtitle, 
+export default function PageHeader({
+  title,
+  subtitle,
   showSearch = false,
-  searchQuery = '',
+  searchQuery = "",
   onSearchChange = () => {},
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = "Search...",
   showButton = false,
-  buttonText = 'New',
+  buttonText = "New",
   buttonIcon = Plus,
   onButtonClick = () => {},
-  customActions = null
+  customActions = null,
 }) {
   const ButtonIcon = buttonIcon;
 
   return (
-    <div className="page-header d-flex justify-content-between align-items-start mb-4">
-      <div>
-        <h4 className="fw-semibold mb-1">{title}</h4>
-        <p className="text-muted mb-0">{subtitle}</p>
-      </div>
-      
+    <Row className="align-items-start mb-4">
+      <Col>
+        <div className="syn-title">{title}</div>
+        {subtitle ? <div className="syn-subtitle mt-1">{subtitle}</div> : null}
+      </Col>
+
       {(showSearch || showButton || customActions) && (
-        <div className="d-flex gap-2">
-          {showSearch && (
-            <InputGroup style={{ width: '250px' }}>
-              <Button color="light" className="border border-end-0">
+        <Col xs="auto" className="d-flex align-items-center gap-2">
+          {showSearch ? (
+            <InputGroup style={{ width: 280 }}>
+              <Button
+                type="button"
+                className="syn-icon-btn"
+                style={{
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
+                  border: "1px solid var(--syn-border)",
+                  background: "var(--syn-surface)",
+                }}
+                aria-label="Search"
+              >
                 <Search size={18} />
               </Button>
+
               <Input
                 type="text"
                 placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="border-start-0"
+                style={{
+                  border: "1px solid var(--syn-border)",
+                  borderLeft: "none",
+                  borderTopRightRadius: "var(--syn-radius-btn)",
+                  borderBottomRightRadius: "var(--syn-radius-btn)",
+                  borderTopLeftRadius: 0,
+                  borderBottomLeftRadius: 0,
+                  background: "var(--syn-surface)",
+                  height: 36,
+                  fontSize: "14px",
+                }}
               />
             </InputGroup>
-          )}
-          
-          {showButton && (
-            <Button 
-              className="gradient-primary border-0 d-flex align-items-center gap-2 px-3"
+          ) : null}
+
+          {showButton ? (
+            <Button
+              type="button"
+              className="syn-btn-primary d-flex align-items-center gap-2"
               onClick={onButtonClick}
             >
-              <ButtonIcon size={18} />
+              <ButtonIcon size={16} />
               <span>{buttonText}</span>
             </Button>
-          )}
+          ) : null}
 
           {customActions}
-        </div>
+        </Col>
       )}
-    </div>
+    </Row>
   );
 }

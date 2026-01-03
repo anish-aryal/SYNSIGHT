@@ -3,6 +3,7 @@ import {
   analyzeText,
   analyzeTwitter,
   analyzeReddit,
+  analyzeBluesky,
   analyzeMultiPlatform,
   getHistory,
   getAnalysisById,
@@ -29,5 +30,7 @@ router.get('/statistics', getStatistics);
 // Single analysis operations
 router.get('/:id', getAnalysisById);
 router.delete('/:id', deleteAnalysis);
+
+router.post('/bluesky', analyzeBluesky); 
 
 export default router;

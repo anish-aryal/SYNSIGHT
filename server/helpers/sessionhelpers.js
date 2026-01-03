@@ -66,6 +66,7 @@ export const parseUserAgent = (userAgent) => {
   return { browser, os, device };
 };
 
+
 export const getTimeAgo = (date) => {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
 

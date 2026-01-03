@@ -14,7 +14,7 @@ const analysisSchema = new mongoose.Schema(
     },
     source: {
       type: String,
-      enum: ['text', 'twitter', 'reddit', 'multi-platform'],
+      enum: ['text', 'twitter', 'reddit', 'bluesky', 'multi-platform'],
       required: true
     },
     
