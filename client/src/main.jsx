@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './api/context/AppContext';
 import { AuthProvider } from './api/context/AuthContext';
-import { AnalysisProvider } from './api/context/AnalysisContext';
+import { ChatProvider } from './api/context/ChatContext';
 import NotificationToast from './components/NotificationToast/NotificationToast';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestRoute from './components/GuestRoute';
@@ -14,6 +14,7 @@ import Chat from './pages/Chat/Chat';
 import Reports from './pages/Reports/Reports';
 import Projects from './pages/Projects/Projects';
 import Settings from './pages/Settings/Settings';
+import History from './pages/History/History';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Landing from './pages/Landing/Landing';
@@ -27,36 +28,41 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <AppProvider>
       <Router>
         <AuthProvider>
-          <AnalysisProvider>
-            <NotificationToast />
-            <Routes>
-              {/* Public Route */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/design-system" element={<DesignSystem />} />
+          <NotificationToast />
+          <Routes>
+            {/* Public Route */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/design-system" element={<DesignSystem />} />
 
-              {/* Guest Only Routes */}
-              <Route element={<GuestRoute />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Register />} />
-                <Route path="/verify-otp" element={<VerifyOTP />} />
-              </Route>
+            {/* Guest Only Routes */}
+            <Route element={<GuestRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Register />} />
+              <Route path="/verify-otp" element={<VerifyOTP />} />
+            </Route>
 
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<AppLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/explore" element={<Explore />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/history" element={<div className="p-4">History Page</div>} />
-                  <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
-                  <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
+            {/* Protected Routes - Wrapped with ChatProvider */}
+            <Route element={<ProtectedRoute />}>
+              <Route
+                element={
+                  <ChatProvider>
+                    <AppLayout />
+                  </ChatProvider>
+                }
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/chat/:chatId" element={<Chat />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
+                <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
-            </Routes>
-          </AnalysisProvider>
+            </Route>
+          </Routes>
         </AuthProvider>
       </Router>
     </AppProvider>

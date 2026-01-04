@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalHeader,
@@ -27,35 +27,39 @@ import {
   Instagram,
   Facebook
 } from 'lucide-react';
-import { useAnalysis } from '../../../api/context/AnalysisContext';
+import { useChat } from '../../../api/context/ChatContext';
 import './AnalysisOptionsModal.css';
 
+// Default options
+const DEFAULT_OPTIONS = {
+  timeframe: 'last7days',
+  analysisDepth: 'standard',
+  platforms: {
+    twitter: true,
+    reddit: true,
+    bluesky: true,
+    linkedin: false,
+    instagram: false,
+    facebook: false
+  },
+  location: 'all',
+  language: 'en',
+  filters: {
+    excludeRetweets: false,
+    excludeReplies: false,
+    minEngagement: 0
+  },
+  contentSettings: {
+    includeMedia: true,
+    includeLinks: true
+  }
+};
+
 export default function AnalysisOptionsModal({ isOpen, toggle }) {
-  const { analysisOptions, setAnalysisOptions } = useAnalysis();
+  const { analysisOptions, setAnalysisOptions } = useChat();
   
-  // Local state for the form
-  const [options, setOptions] = useState({
-    timeframe: 'last7days',
-    analysisDepth: 'standard',
-    platforms: {
-      twitter: true,
-      reddit: false,
-      linkedin: false,
-      instagram: false,
-      facebook: false
-    },
-    location: 'all',
-    language: 'en',
-    filters: {
-      excludeRetweets: false,
-      excludeReplies: false,
-      minEngagement: 0
-    },
-    contentSettings: {
-      includeMedia: true,
-      includeLinks: true
-    }
-  });
+  // Local state with default values
+  const [options, setOptions] = useState(DEFAULT_OPTIONS);
 
   // Collapse states
   const [openSections, setOpenSections] = useState({
@@ -65,6 +69,29 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
     filters: false,
     content: false
   });
+
+  // Sync with context when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Merge context options with defaults to ensure all properties exist
+      setOptions(prev => ({
+        ...DEFAULT_OPTIONS,
+        ...analysisOptions,
+        platforms: {
+          ...DEFAULT_OPTIONS.platforms,
+          ...(analysisOptions?.platforms || {})
+        },
+        filters: {
+          ...DEFAULT_OPTIONS.filters,
+          ...(analysisOptions?.filters || {})
+        },
+        contentSettings: {
+          ...DEFAULT_OPTIONS.contentSettings,
+          ...(analysisOptions?.contentSettings || {})
+        }
+      }));
+    }
+  }, [isOpen, analysisOptions]);
 
   const toggleSection = (section) => {
     setOpenSections(prev => ({
@@ -78,46 +105,24 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
       ...prev,
       platforms: {
         ...prev.platforms,
-        [platform]: !prev.platforms[platform]
+        [platform]: !prev.platforms?.[platform]
       }
     }));
   };
 
   const handleApply = () => {
-    if (setAnalysisOptions) {
-      setAnalysisOptions(options);
-    }
+    setAnalysisOptions(options);
     toggle();
   };
 
   const handleReset = () => {
-    setOptions({
-      timeframe: 'last7days',
-      analysisDepth: 'standard',
-      platforms: {
-        twitter: true,
-        reddit: false,
-        linkedin: false,
-        instagram: false,
-        facebook: false
-      },
-      location: 'all',
-      language: 'en',
-      filters: {
-        excludeRetweets: false,
-        excludeReplies: false,
-        minEngagement: 0
-      },
-      contentSettings: {
-        includeMedia: true,
-        includeLinks: true
-      }
-    });
+    setOptions(DEFAULT_OPTIONS);
   };
 
   const platforms = [
     { id: 'twitter', name: 'Twitter/X', icon: Twitter },
     { id: 'reddit', name: 'Reddit', icon: MessageSquareText },
+    { id: 'bluesky', name: 'Bluesky', icon: Globe },
     { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
     { id: 'instagram', name: 'Instagram', icon: Instagram },
     { id: 'facebook', name: 'Facebook', icon: Facebook }
@@ -126,7 +131,7 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
   return (
     <Modal isOpen={isOpen} toggle={toggle} className="options-modal" size="md" centered>
       {/* Header */}
-      <ModalHeader className="options-modal-header border-0 pb-0">
+      <ModalHeader className="options-modal-header border-0 pb-0" close={<span />}>
         <div className="d-flex align-items-center gap-3">
           <div className="options-header-icon">
             <Settings size={20} color="white" />
@@ -162,7 +167,7 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="select"
                     className="options-select"
-                    value={options.timeframe}
+                    value={options.timeframe || 'last7days'}
                     onChange={(e) => setOptions(prev => ({ ...prev, timeframe: e.target.value }))}
                   >
                     <option value="last24hours">Last 24 hours</option>
@@ -177,7 +182,7 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="select"
                     className="options-select"
-                    value={options.analysisDepth}
+                    value={options.analysisDepth || 'standard'}
                     onChange={(e) => setOptions(prev => ({ ...prev, analysisDepth: e.target.value }))}
                   >
                     <option value="quick">Quick</option>
@@ -206,8 +211,7 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
             <div className="options-section-content">
               <Row className="g-2">
                 {platforms.map((platform) => {
-                  const IconComponent = platform.icon;
-                  const isChecked = options.platforms[platform.id];
+                  const isChecked = options.platforms?.[platform.id] || false;
                   return (
                     <Col xs={6} key={platform.id}>
                       <div 
@@ -247,7 +251,7 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="select"
                     className="options-select"
-                    value={options.location}
+                    value={options.location || 'all'}
                     onChange={(e) => setOptions(prev => ({ ...prev, location: e.target.value }))}
                   >
                     <option value="all">All Locations</option>
@@ -262,7 +266,7 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="select"
                     className="options-select"
-                    value={options.language}
+                    value={options.language || 'en'}
                     onChange={(e) => setOptions(prev => ({ ...prev, language: e.target.value }))}
                   >
                     <option value="en">English</option>
@@ -296,10 +300,13 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="checkbox"
                     id="excludeRetweets"
-                    checked={options.filters.excludeRetweets}
+                    checked={options.filters?.excludeRetweets || false}
                     onChange={(e) => setOptions(prev => ({
                       ...prev,
-                      filters: { ...prev.filters, excludeRetweets: e.target.checked }
+                      filters: { 
+                        ...prev.filters, 
+                        excludeRetweets: e.target.checked 
+                      }
                     }))}
                   />
                   <Label for="excludeRetweets" className="mb-0 ms-2">Exclude retweets</Label>
@@ -308,10 +315,13 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="checkbox"
                     id="excludeReplies"
-                    checked={options.filters.excludeReplies}
+                    checked={options.filters?.excludeReplies || false}
                     onChange={(e) => setOptions(prev => ({
                       ...prev,
-                      filters: { ...prev.filters, excludeReplies: e.target.checked }
+                      filters: { 
+                        ...prev.filters, 
+                        excludeReplies: e.target.checked 
+                      }
                     }))}
                   />
                   <Label for="excludeReplies" className="mb-0 ms-2">Exclude replies</Label>
@@ -340,10 +350,13 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="checkbox"
                     id="includeMedia"
-                    checked={options.contentSettings.includeMedia}
+                    checked={options.contentSettings?.includeMedia || false}
                     onChange={(e) => setOptions(prev => ({
                       ...prev,
-                      contentSettings: { ...prev.contentSettings, includeMedia: e.target.checked }
+                      contentSettings: { 
+                        ...prev.contentSettings, 
+                        includeMedia: e.target.checked 
+                      }
                     }))}
                   />
                   <Label for="includeMedia" className="mb-0 ms-2">Include posts with media</Label>
@@ -352,10 +365,13 @@ export default function AnalysisOptionsModal({ isOpen, toggle }) {
                   <Input
                     type="checkbox"
                     id="includeLinks"
-                    checked={options.contentSettings.includeLinks}
+                    checked={options.contentSettings?.includeLinks || false}
                     onChange={(e) => setOptions(prev => ({
                       ...prev,
-                      contentSettings: { ...prev.contentSettings, includeLinks: e.target.checked }
+                      contentSettings: { 
+                        ...prev.contentSettings, 
+                        includeLinks: e.target.checked 
+                      }
                     }))}
                   />
                   <Label for="includeLinks" className="mb-0 ms-2">Include posts with links</Label>

@@ -1,77 +1,90 @@
-import React, { useState } from 'react';
-import { Row, Col, Button, Spinner } from 'reactstrap';
-import { GitCompare, FileDown, FolderPlus, Share2 } from 'lucide-react';
-import { useAnalysis } from '../../../api/context/AnalysisContext';
-import { useApp } from '../../../api/context/AppContext';
+import React from 'react';
+import { Button } from 'reactstrap';
+import { 
+  Download, 
+  Share2, 
+  FolderPlus, 
+  RefreshCw,
+  FileText
+} from 'lucide-react';
 
-export default function ActionBar({ analysisId, query, results }) {
-  const { fetchAnalysisById } = useAnalysis();
-  const { showSuccess, showError } = useApp();
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleCompare = () => {
-    showSuccess('Compare feature coming soon!');
+export default function ActionBar({ query, onRefresh }) {
+  
+  const handleExport = () => {
+    // Export functionality - can be implemented later
+    console.log('Export analysis for:', query);
   };
 
-  const handleGenerateReport = async () => {
-    setIsGenerating(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      showSuccess('Report generated successfully!');
-    } catch (error) {
-      showError('Failed to generate report');
-    } finally {
-      setIsGenerating(false);
-    }
+  const handleShare = () => {
+    // Share functionality - can be implemented later
+    console.log('Share analysis');
   };
 
-  const handleSaveProject = async () => {
-    try {
-      showSuccess('Saved as project successfully!');
-    } catch (error) {
-      showError('Failed to save project');
-    }
+  const handleSaveToProject = () => {
+    // Save to project functionality - can be implemented later
+    console.log('Save to project');
   };
 
-  const handleShare = async () => {
-    try {
-      const shareUrl = `${window.location.origin}/analysis/${analysisId}`;
-      await navigator.clipboard.writeText(shareUrl);
-      showSuccess('Link copied to clipboard!');
-    } catch (error) {
-      showError('Failed to copy link');
-    }
+  const handleGenerateReport = () => {
+    // Generate report functionality - can be implemented later
+    console.log('Generate report for:', query);
   };
 
   return (
-    <Row className="justify-content-center">
-      <Col xs={12}>
-        <div className="action-bar">
-          <Button outline color="secondary" size="sm" onClick={handleCompare} className="action-btn">
-            <GitCompare size={16} />
-            Compare Topic
-          </Button>
-          <Button 
-            outline 
-            color="secondary" 
-            size="sm"
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
-            className="action-btn"
-          >
-            {isGenerating ? <Spinner size="sm" /> : <FileDown size={16} />}
-            Generate Report
-          </Button>
-          <Button outline color="secondary" size="sm" onClick={handleSaveProject} className="action-btn">
-            <FolderPlus size={16} />
-            Save as Project
-          </Button>
-          <Button outline color="secondary" size="sm" onClick={handleShare} className="action-btn">
-            <Share2 size={16} />
-            Share
-          </Button>
-        </div>
-      </Col>
-    </Row>
+    <div className="action-bar d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+      <Button
+        outline
+        color="secondary"
+        size="sm"
+        className="d-flex align-items-center gap-2"
+        onClick={onRefresh}
+      >
+        <RefreshCw size={14} />
+        <span>Refresh</span>
+      </Button>
+
+      <Button
+        outline
+        color="secondary"
+        size="sm"
+        className="d-flex align-items-center gap-2"
+        onClick={handleExport}
+      >
+        <Download size={14} />
+        <span>Export</span>
+      </Button>
+
+      <Button
+        outline
+        color="secondary"
+        size="sm"
+        className="d-flex align-items-center gap-2"
+        onClick={handleShare}
+      >
+        <Share2 size={14} />
+        <span>Share</span>
+      </Button>
+
+      <Button
+        outline
+        color="secondary"
+        size="sm"
+        className="d-flex align-items-center gap-2"
+        onClick={handleSaveToProject}
+      >
+        <FolderPlus size={14} />
+        <span>Save to Project</span>
+      </Button>
+
+      <Button
+        color="primary"
+        size="sm"
+        className="d-flex align-items-center gap-2 ms-auto"
+        onClick={handleGenerateReport}
+      >
+        <FileText size={14} />
+        <span>Generate Report</span>
+      </Button>
+    </div>
   );
 }

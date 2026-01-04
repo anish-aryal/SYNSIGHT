@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Badge, Spinner } from 'reactstrap';
 import ChatHeader from './components/ChatHeader';
 import ChatInput from './components/ChatInput';
@@ -7,23 +8,28 @@ import AnalysisSteps from './components/AnalysisSteps';
 import AnalysisResults from './components/AnalysisResults';
 import SkeletonLoader from './components/SkeletonLoader';
 import { Sparkles } from 'lucide-react';
-import { useAnalysis } from '../../api/context/AnalysisContext';
+import { useChat } from '../../api/context/ChatContext';
 import './Chat.css';
 
 export default function Chat() {
+  const { chatId } = useParams();
+  const navigate = useNavigate();
+  
   const {
+    currentChat,
     messages,
     isAnalyzing,
     currentStep,
     analysisSteps,
-    analyzeMultiPlatform,
-    clearChat,
-    history,
-    fetchHistory
-  } = useAnalysis();
+    sendMessage,
+    loadChat,
+    startNewChat,
+    fetchChats
+  } = useChat();
 
   const messagesEndRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const hasLoadedChat = useRef(false);
 
   const suggestions = [
     'Analyze sentiment for Tesla',
@@ -34,6 +40,7 @@ export default function Chat() {
 
   const isInitialState = messages.length === 0 && !isAnalyzing;
 
+  // Scroll to bottom when messages change
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -42,39 +49,59 @@ export default function Chat() {
     scrollToBottom();
   }, [messages, isAnalyzing, currentStep]);
 
+  // Load chat if chatId in URL
   useEffect(() => {
-    fetchHistory(1, 4);
-  }, [fetchHistory]);
+    if (chatId && !hasLoadedChat.current) {
+      hasLoadedChat.current = true;
+      loadChat(chatId);
+    } else if (!chatId) {
+      // If no chatId in URL, start fresh (but don't call startNewChat if we have messages)
+      hasLoadedChat.current = false;
+    }
+  }, [chatId, loadChat]);
 
-  const handleSearch = async (query) => {
+  // Fetch chats on mount
+  useEffect(() => {
+    fetchChats();
+  }, [fetchChats]);
+
+  // Handle sending message
+  const handleSend = async (query) => {
     if (!query.trim()) return;
     setSearchQuery('');
-    await analyzeMultiPlatform(query);
+    
+    const result = await sendMessage(query);
+    
+    // If this created a new chat, update URL
+    if (result && result.chatId && !chatId) {
+      navigate(`/chat/${result.chatId}`, { replace: true });
+    }
   };
 
+  // Handle suggestion click
   const handleSuggestionClick = (suggestion) => {
-    handleSearch(suggestion);
+    handleSend(suggestion);
   };
 
+  // Handle new chat
   const handleNewChat = () => {
-    clearChat();
+    startNewChat();
     setSearchQuery('');
+    hasLoadedChat.current = false;
+    navigate('/chat');
   };
 
   // Initial State - Welcome Screen
   if (isInitialState) {
     return (
       <div className="chat-wrapper">
-        {/* Header */}
         <ChatHeader onNewChat={handleNewChat} isInitial />
 
-        {/* Main Content - Centered */}
         <div className="chat-main-area">
           <Container>
             <Row className="justify-content-center">
               <Col xs={12} lg={10} xl={8}>
                 <div className="welcome-content">
-                  {/* Logo & Title */}
                   <div className="welcome-header">
                     <div className="welcome-logo gradient-primary">
                       <Sparkles size={32} color="white" />
@@ -82,7 +109,6 @@ export default function Chat() {
                     <h1 className="welcome-title">How can I help you today?</h1>
                   </div>
 
-                  {/* Suggestions */}
                   <div className="suggestions-grid">
                     <Row className="g-3">
                       {suggestions.map((suggestion, index) => (
@@ -104,11 +130,10 @@ export default function Chat() {
           </Container>
         </div>
 
-        {/* Input - Fixed at bottom */}
         <ChatInput
           value={searchQuery}
           onChange={setSearchQuery}
-          onSend={handleSearch}
+          onSend={handleSend}
           disabled={isAnalyzing}
         />
       </div>
@@ -118,20 +143,17 @@ export default function Chat() {
   // Chat State - Messages
   return (
     <div className="chat-wrapper">
-      {/* Header */}
       <ChatHeader onNewChat={handleNewChat} />
 
-      {/* Messages Area */}
       <div className="chat-messages-area">
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message}>
+          <MessageBubble key={message._id || message.id} message={message}>
             {message.type === 'ai' && (
               <AnalysisResults results={message.content} query={message.query} />
             )}
           </MessageBubble>
         ))}
 
-        {/* Loading State */}
         {isAnalyzing && (
           <div className="message-row ai">
             <Container>
@@ -162,8 +184,7 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input - Fixed at bottom */}
-      <ChatInput onSend={handleSearch} disabled={isAnalyzing} />
+      <ChatInput onSend={handleSend} disabled={isAnalyzing} />
     </div>
   );
 }

@@ -7,35 +7,47 @@ const AnalysisContext = createContext(null);
 export const AnalysisProvider = ({ children }) => {
   const { showError } = useApp();
 
+  // Chat messages state
   const [messages, setMessages] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+
+  // History state
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [statistics, setStatistics] = useState(null);
-  const [analysisOptions, setAnalysisOptions] = useState({
-  timeframe: 'last7days',
-  analysisDepth: 'standard',
-  platforms: {
-    twitter: true,
-    reddit: false,
-    linkedin: false,
-    instagram: false,
-    facebook: false
-  },
-  location: 'all',
-  language: 'en',
-  filters: {
-    excludeRetweets: false,
-    excludeReplies: false,
-    minEngagement: 0
-  },
-  contentSettings: {
-    includeMedia: true,
-    includeLinks: true
-  }
-});
 
+  // Statistics
+  const [statistics, setStatistics] = useState(null);
+
+  // Platform selection (for header dropdown)
+  const [selectedPlatform, setSelectedPlatform] = useState('all');
+
+  // Analysis options (for options modal)
+  const [analysisOptions, setAnalysisOptions] = useState({
+    timeframe: 'last7days',
+    analysisDepth: 'standard',
+    platforms: {
+      twitter: true,
+      reddit: true,
+      bluesky: true,
+      linkedin: false,
+      instagram: false,
+      facebook: false
+    },
+    location: 'all',
+    language: 'en',
+    filters: {
+      excludeRetweets: false,
+      excludeReplies: false,
+      minEngagement: 0
+    },
+    contentSettings: {
+      includeMedia: true,
+      includeLinks: true
+    }
+  });
+
+  // Analysis steps for loading state
   const analysisSteps = [
     'Parsing query and extracting filters',
     'Fetching data from social media sources',
@@ -43,6 +55,7 @@ export const AnalysisProvider = ({ children }) => {
     'Generating insights and visualizations'
   ];
 
+  // Simulate step progression
   const simulateSteps = useCallback(() => {
     return new Promise((resolve) => {
       let step = 0;
@@ -57,9 +70,11 @@ export const AnalysisProvider = ({ children }) => {
     });
   }, [analysisSteps.length]);
 
+  // Multi-platform analysis
   const analyzeMultiPlatform = useCallback(async (query) => {
     if (!query.trim()) return null;
 
+    // Add user message
     const userMessage = {
       id: Date.now(),
       type: 'user',
@@ -73,7 +88,15 @@ export const AnalysisProvider = ({ children }) => {
 
     try {
       const stepsPromise = simulateSteps();
-      const response = await analysisService.analyzeMultiPlatform(query);
+      
+      // Use selectedPlatform to determine API call
+      let response;
+      if (selectedPlatform === 'all') {
+        response = await analysisService.analyzeMultiPlatform(query, analysisOptions);
+      } else {
+        response = await analysisService.analyzePlatform(selectedPlatform, query, analysisOptions);
+      }
+      
       await stepsPromise;
 
       if (response.success) {
@@ -97,41 +120,9 @@ export const AnalysisProvider = ({ children }) => {
       setIsAnalyzing(false);
       setCurrentStep(0);
     }
-  }, [simulateSteps, showError]);
+  }, [simulateSteps, showError, selectedPlatform, analysisOptions]);
 
-  const analyzePlatform = useCallback(async (platform, query) => {
-    try {
-      setIsAnalyzing(true);
-      
-      let response;
-      switch (platform) {
-        case 'twitter':
-          response = await analysisService.analyzeTwitter(query);
-          break;
-        case 'reddit':
-          response = await analysisService.analyzeReddit(query);
-          break;
-        case 'bluesky':
-          response = await analysisService.analyzeBluesky(query);
-          break;
-        default:
-          response = await analysisService.analyzeMultiPlatform(query);
-      }
-
-      if (response.success) {
-        return response.data;
-      } else {
-        showError(response.message || 'Analysis failed');
-        return null;
-      }
-    } catch (error) {
-      showError(error.message || 'Failed to analyze');
-      return null;
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [showError]);
-
+  // Text analysis
   const analyzeText = useCallback(async (text) => {
     try {
       const response = await analysisService.analyzeText(text);
@@ -146,24 +137,26 @@ export const AnalysisProvider = ({ children }) => {
     }
   }, [showError]);
 
+  // Fetch history
   const fetchHistory = useCallback(async (page = 1, limit = 10, source = null) => {
     try {
       setHistoryLoading(true);
       const response = await analysisService.getHistory(page, limit, source);
       
       if (response.success) {
-        setHistory(response.data.analyses);
+        setHistory(response.data.analyses || []);
         return response.data;
       }
       return null;
     } catch (error) {
-      showError('Failed to fetch history');
+      console.error('Failed to fetch history:', error);
       return null;
     } finally {
       setHistoryLoading(false);
     }
-  }, [showError]);
+  }, []);
 
+  // Fetch single analysis by ID
   const fetchAnalysisById = useCallback(async (id) => {
     try {
       const response = await analysisService.getAnalysisById(id);
@@ -178,6 +171,7 @@ export const AnalysisProvider = ({ children }) => {
     }
   }, [showError]);
 
+  // Delete analysis
   const deleteAnalysis = useCallback(async (id) => {
     try {
       const response = await analysisService.deleteAnalysis(id);
@@ -193,6 +187,7 @@ export const AnalysisProvider = ({ children }) => {
     }
   }, [showError]);
 
+  // Fetch statistics
   const fetchStatistics = useCallback(async () => {
     try {
       const response = await analysisService.getStatistics();
@@ -202,23 +197,26 @@ export const AnalysisProvider = ({ children }) => {
       }
       return null;
     } catch (error) {
-      showError('Failed to fetch statistics');
+      console.error('Failed to fetch statistics:', error);
       return null;
     }
-  }, [showError]);
+  }, []);
 
+  // Clear chat
   const clearChat = useCallback(() => {
     setMessages([]);
     setIsAnalyzing(false);
     setCurrentStep(0);
   }, []);
 
+  // Get latest analysis result
   const getLatestAnalysis = useCallback(() => {
     const aiMessages = messages.filter(m => m.type === 'ai');
     return aiMessages.length > 0 ? aiMessages[aiMessages.length - 1].content : null;
   }, [messages]);
 
   const value = {
+    // State
     messages,
     isAnalyzing,
     currentStep,
@@ -226,10 +224,13 @@ export const AnalysisProvider = ({ children }) => {
     history,
     historyLoading,
     statistics,
+    selectedPlatform,
     analysisOptions,
+
+    // Actions
+    setSelectedPlatform,
     setAnalysisOptions,
     analyzeMultiPlatform,
-    analyzePlatform,
     analyzeText,
     fetchHistory,
     fetchAnalysisById,

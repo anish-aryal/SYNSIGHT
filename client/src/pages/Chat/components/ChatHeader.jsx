@@ -20,11 +20,11 @@ import {
   CloudSun,
   Check
 } from 'lucide-react';
-import { useAnalysis } from '../../../api/context/AnalysisContext';
+import { useChat } from '../../../api/context/ChatContext';
 
 export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { selectedPlatform, setSelectedPlatform } = useAnalysis();
+  const { selectedPlatform, setSelectedPlatform } = useChat();
 
   const toggle = () => setDropdownOpen(!dropdownOpen);
 
