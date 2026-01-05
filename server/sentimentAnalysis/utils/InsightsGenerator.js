@@ -1,46 +1,48 @@
 export const generateInsights = (data, query) => {
   const insights = {};
+  const total = data.total_analyzed || 0;
+  const dist = data.sentiment_distribution || { positive: 0, negative: 0, neutral: 0 };
 
-  // Overall sentiment insight
-  const positivePercent = Math.round((data.sentiment_distribution.positive / data.total_analyzed) * 100);
-  if (positivePercent >= 60) {
-    insights.overall = `Overall positive sentiment (${positivePercent}%) indicates strong public reception`;
-  } else if (positivePercent <= 40) {
-    insights.overall = `Mixed sentiment with concerns (${100 - positivePercent}% negative/neutral)`;
+  if (total > 0) {
+    const positivePercent = Math.round((dist.positive / total) * 100);
+
+    if (positivePercent >= 60) {
+      insights.overall = `Overall positive sentiment (${positivePercent}%) indicates strong public reception`;
+    } else if (positivePercent <= 40) {
+      insights.overall = `Mixed sentiment with concerns (${100 - positivePercent}% negative/neutral)`;
+    } else {
+      insights.overall = `Balanced sentiment with ${positivePercent}% positive reception`;
+    }
   } else {
-    insights.overall = `Balanced sentiment with ${positivePercent}% positive reception`;
+    insights.overall = 'Not enough data to determine overall sentiment';
   }
 
-  // Peak engagement
-  if (data.timeAnalysis && data.timeAnalysis.length > 0) {
-    const peakHour = data.timeAnalysis.reduce((max, curr) => 
-      curr.volume > max.volume ? curr : max
-    );
-    const timeLabel = peakHour.hour < 12 ? 'AM' : 'PM';
-    const displayHour = peakHour.hour % 12 || 12;
+  const ta = data.timeAnalysis || [];
+  if (ta.length > 0) {
+    let peak = ta[0];
+    for (let i = 1; i < ta.length; i++) {
+      if (ta[i].volume > peak.volume) peak = ta[i];
+    }
+    const timeLabel = peak.hour < 12 ? 'AM' : 'PM';
+    const displayHour = peak.hour % 12 || 12;
     insights.peakEngagement = `Peak engagement observed at ${displayHour} ${timeLabel}`;
   }
 
-  // Top drivers
-  if (data.topKeywords && data.topKeywords.length > 0) {
-    const positiveKeywords = data.topKeywords
-      .filter(k => k.sentiment === 'positive')
-      .slice(0, 2)
-      .map(k => k.keyword);
-    
-    const negativeKeywords = data.topKeywords
-      .filter(k => k.sentiment === 'negative')
-      .slice(0, 2)
-      .map(k => k.keyword);
+  const kws = data.topKeywords || [];
+  if (kws.length > 0) {
+    const positives = [];
+    const negatives = [];
+
+    for (let i = 0; i < kws.length; i++) {
+      const k = kws[i];
+      if (k.sentiment === 'positive' && positives.length < 2) positives.push(k.keyword);
+      if (k.sentiment === 'negative' && negatives.length < 2) negatives.push(k.keyword);
+      if (positives.length >= 2 && negatives.length >= 2) break;
+    }
 
     const drivers = [];
-    if (positiveKeywords.length > 0) {
-      drivers.push(`${positiveKeywords.join(', ')} (positive aspects)`);
-    }
-    if (negativeKeywords.length > 0) {
-      drivers.push(`${negativeKeywords.join(', ')} (concerns)`);
-    }
-    
+    if (positives.length) drivers.push(`${positives.join(', ')} (positive aspects)`);
+    if (negatives.length) drivers.push(`${negatives.join(', ')} (concerns)`);
     insights.topDrivers = drivers;
   }
 

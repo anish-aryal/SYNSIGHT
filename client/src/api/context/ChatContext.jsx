@@ -6,33 +6,26 @@ import { useApp } from './AppContext';
 const ChatContext = createContext(null);
 
 export const ChatProvider = ({ children }) => {
-  const { showError, showSuccess } = useApp();
+  const { showError } = useApp();
 
-  // Current chat state
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
-
-  // Use ref to track current chat ID (avoids stale closure issues)
   const currentChatRef = useRef(null);
 
-  // Chat list (for sidebar/history)
   const [chats, setChats] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(false);
 
-  // Analysis loading state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Options
+  // ✅ used by ChatHeader
   const [selectedPlatform, setSelectedPlatform] = useState('all');
+
+  // ✅ only UI supported
   const [analysisOptions, setAnalysisOptions] = useState({
     timeframe: 'last7days',
-    analysisDepth: 'standard',
-    platforms: { twitter: true, reddit: true, bluesky: true },
-    location: 'all',
     language: 'en',
-    filters: { excludeRetweets: false, excludeReplies: false },
-    contentSettings: { includeMedia: true, includeLinks: true }
+    platforms: { twitter: true, reddit: true, bluesky: true } // only used when selectedPlatform === 'all'
   });
 
   const analysisSteps = [
@@ -42,262 +35,179 @@ export const ChatProvider = ({ children }) => {
     'Generating insights and visualizations'
   ];
 
-  // Simulate step progression for UX
   const simulateSteps = useCallback(() => {
-    return new Promise((resolve) => {
-      let step = 0;
-      const interval = setInterval(() => {
-        step++;
-        setCurrentStep(step);
-        if (step >= analysisSteps.length) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 800);
-    });
-  }, [analysisSteps.length]);
-
-  // Fetch all chats for sidebar
-  const fetchChats = useCallback(async () => {
-    try {
-      setChatsLoading(true);
-      const response = await chatService.getChats();
-      if (response.success) {
-        setChats(response.data.chats);
-      }
-    } catch (error) {
-      console.error('Failed to fetch chats:', error);
-    } finally {
-      setChatsLoading(false);
-    }
-  }, []);
-
-  // Load existing chat by ID
-  const loadChat = useCallback(async (chatId) => {
-    try {
-      const response = await chatService.getChatById(chatId);
-      if (response.success) {
-        setCurrentChat(response.data);
-        currentChatRef.current = response.data._id;
-        setMessages(response.data.messages || []);
-        return response.data;
-      }
-    } catch (error) {
-      showError('Failed to load chat');
-    }
-    return null;
-  }, [showError]);
-
-  // Main function: Send message and get analysis
-  const sendMessage = useCallback(async (query) => {
-    if (!query.trim()) return null;
-
-    // Use ref to get the current chat ID (more reliable than state)
-    let chatId = currentChatRef.current;
-
-    // Step 1: Create chat if this is a new conversation
-    if (!chatId) {
-      try {
-        const createResponse = await chatService.createChat({
-          platform: selectedPlatform,
-          options: analysisOptions
-        });
-        if (createResponse.success) {
-          chatId = createResponse.data._id;
-          setCurrentChat(createResponse.data);
-          currentChatRef.current = chatId; // Update ref immediately
-          
-          // Add to sidebar
-          setChats(prev => [{
-            _id: chatId,
-            title: 'New Chat',
-            messageCount: 0,
-            analysisCount: 0,
-            updatedAt: new Date()
-          }, ...prev]);
-        } else {
-          showError('Failed to create chat');
-          return null;
-        }
-      } catch (error) {
-        showError('Failed to create chat');
-        return null;
-      }
-    }
-
-    // Step 2: Add user message to UI immediately
-    const userMessage = {
-      _id: `temp-${Date.now()}`,
-      type: 'user',
-      content: query,
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, userMessage]);
     setIsAnalyzing(true);
     setCurrentStep(0);
 
+    return new Promise((resolve) => {
+      let step = 0;
+      const interval = setInterval(() => {
+        step += 1;
+        setCurrentStep(step);
+
+        if (step >= analysisSteps.length) {
+          clearInterval(interval);
+          setTimeout(resolve, 600);
+        }
+      }, 700);
+    });
+  }, [analysisSteps.length]);
+
+  const persistMessage = useCallback(async (chatId, message) => {
+    const fn = chatService.addMessage || chatService.sendMessage;
+    if (!fn) throw new Error('chatService.addMessage/sendMessage is missing');
+    return fn(chatId, message);
+  }, []);
+
+  const fetchChats = useCallback(async () => {
     try {
-      // Step 3: Save user message to backend
-      await chatService.addMessage(chatId, {
-        type: 'user',
-        content: query
-      });
-
-      // Step 4: Run analysis
-      const [_, analysisResponse] = await Promise.all([
-        simulateSteps(),
-        analysisService.analyzeMultiPlatform(query)
-      ]);
-
-      if (analysisResponse.success) {
-        // Step 5: Create AI message with analysis result
-        const aiMessage = {
-          _id: `temp-ai-${Date.now()}`,
-          type: 'ai',
-          content: analysisResponse.data,
-          query: query,
-          analysisId: analysisResponse.data._id,
-          timestamp: new Date()
-        };
-
-        // Step 6: Save AI message to backend
-        await chatService.addMessage(chatId, {
-          type: 'ai',
-          content: analysisResponse.data,
-          query: query,
-          analysisId: analysisResponse.data._id
-        });
-
-        // Step 7: Update UI
-        setMessages(prev => [...prev, aiMessage]);
-
-        // Step 8: Update chat title in sidebar (only if it was "New Chat")
-        const newTitle = query.substring(0, 50) + (query.length > 50 ? '...' : '');
-        
-        setChats(prev => prev.map(chat =>
-          chat._id === chatId
-            ? {
-                ...chat,
-                title: chat.title === 'New Chat' ? newTitle : chat.title,
-                messageCount: (chat.messageCount || 0) + 2,
-                analysisCount: (chat.analysisCount || 0) + 1,
-                updatedAt: new Date()
-              }
-            : chat
-        ));
-
-        // Update current chat title
-        setCurrentChat(prev => prev ? {
-          ...prev,
-          title: prev.title === 'New Chat' ? newTitle : prev.title
-        } : prev);
-
-        // Return chatId along with data so Chat.jsx can update URL
-        return { 
-          ...analysisResponse.data, 
-          chatId 
-        };
-      } else {
-        showError(analysisResponse.message || 'Analysis failed');
-        return null;
-      }
-    } catch (error) {
-      showError(error.message || 'Failed to analyze');
-      return null;
+      setChatsLoading(true);
+      const res = await chatService.getChats();
+      if (res?.success) setChats(res.data.chats);
+    } catch (e) {
+      showError(e.message || 'Failed to fetch chats');
     } finally {
-      setIsAnalyzing(false);
-      setCurrentStep(0);
+      setChatsLoading(false);
     }
-  }, [selectedPlatform, analysisOptions, simulateSteps, showError]);
+  }, [showError]);
 
-  // Start new chat (clear current)
   const startNewChat = useCallback(() => {
     setCurrentChat(null);
-    currentChatRef.current = null; // Clear the ref too
+    currentChatRef.current = null;
     setMessages([]);
     setIsAnalyzing(false);
     setCurrentStep(0);
   }, []);
 
-  // Delete chat
-  const removeChat = useCallback(async (chatId) => {
+  const loadChat = useCallback(async (chatId) => {
     try {
-      const response = await chatService.deleteChat(chatId);
-      if (response.success) {
-        setChats(prev => prev.filter(c => c._id !== chatId));
-        if (currentChatRef.current === chatId) {
-          startNewChat();
-        }
-        showSuccess('Chat deleted');
-        return true;
+      const res = await chatService.getChatById(chatId);
+      if (res?.success) {
+        setCurrentChat(res.data);
+        currentChatRef.current = res.data._id;
+        setMessages(res.data.messages || []);
       }
-    } catch (error) {
-      showError('Failed to delete chat');
+    } catch (e) {
+      showError(e.message || 'Failed to load chat');
     }
-    return false;
-  }, [startNewChat, showError, showSuccess]);
-
-  // Rename chat
-  const renameChat = useCallback(async (chatId, title) => {
-    try {
-      const response = await chatService.updateChat(chatId, { title });
-      if (response.success) {
-        setChats(prev => prev.map(c =>
-          c._id === chatId ? { ...c, title } : c
-        ));
-        if (currentChatRef.current === chatId) {
-          setCurrentChat(prev => ({ ...prev, title }));
-        }
-        return true;
-      }
-    } catch (error) {
-      showError('Failed to rename chat');
-    }
-    return false;
   }, [showError]);
 
-  const value = {
-    // Current chat
-    currentChat,
-    messages,
-    isAnalyzing,
-    currentStep,
-    analysisSteps,
+  const sendMessage = useCallback(async (query) => {
+    const trimmed = (query || '').trim();
+    if (!trimmed) return null;
 
-    // Chat list
-    chats,
-    chatsLoading,
+    let chatId = currentChatRef.current;
 
-    // Options
-    selectedPlatform,
-    analysisOptions,
+    // Create chat if needed
+    if (!chatId) {
+      try {
+        const createRes = await chatService.createChat({
+          platform: selectedPlatform,
+          options: {
+            timeframe: analysisOptions.timeframe,
+            language: analysisOptions.language
+          }
+        });
 
-    // Setters
-    setSelectedPlatform,
-    setAnalysisOptions,
+        if (!createRes?.success) {
+          showError(createRes?.message || 'Failed to create chat');
+          return null;
+        }
 
-    // Actions
-    fetchChats,
-    loadChat,
-    sendMessage,
-    startNewChat,
-    removeChat,
-    renameChat
-  };
+        chatId = createRes.data._id;
+        setCurrentChat(createRes.data);
+        currentChatRef.current = chatId;
+      } catch (e) {
+        showError(e.message || 'Failed to create chat');
+        return null;
+      }
+    }
+
+    // Optimistic user message
+    setMessages((prev) => [
+      ...prev,
+      { _id: `temp-user-${Date.now()}`, type: 'user', content: trimmed, createdAt: new Date().toISOString() }
+    ]);
+
+    // Persist user
+    try {
+      await persistMessage(chatId, { type: 'user', content: trimmed });
+    } catch (e) {
+      showError(e.message || 'Failed to save message');
+    }
+
+    try {
+      const [_, analysisRes] = await Promise.all([
+        simulateSteps(),
+        selectedPlatform === 'all'
+          ? analysisService.analyzeMultiPlatform(trimmed, analysisOptions, 100)
+          : analysisService.analyzePlatform(selectedPlatform, trimmed, analysisOptions, 100)
+      ]);
+
+      if (!analysisRes?.success) {
+        showError(analysisRes?.message || 'Analysis failed');
+        return { chatId };
+      }
+
+      const aiMessage = {
+        _id: `temp-ai-${Date.now()}`,
+        type: 'ai',
+        content: analysisRes.data,
+        query: trimmed,
+        createdAt: new Date().toISOString()
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+
+      // Persist AI
+      try {
+        await persistMessage(chatId, { type: 'ai', content: analysisRes.data });
+      } catch (e) {
+        showError(e.message || 'Failed to save AI message');
+      }
+
+      return { chatId };
+    } catch (e) {
+      showError(e.message || 'Failed to analyze');
+      return { chatId };
+    } finally {
+      setIsAnalyzing(false);
+      setCurrentStep(0);
+    }
+  }, [analysisOptions.language, analysisOptions.platforms, analysisOptions.timeframe, persistMessage, selectedPlatform, showError, simulateSteps]);
 
   return (
-    <ChatContext.Provider value={value}>
+    <ChatContext.Provider
+      value={{
+        currentChat,
+        messages,
+
+        chats,
+        chatsLoading,
+
+        isAnalyzing,
+        currentStep,
+        analysisSteps,
+
+        selectedPlatform,
+        setSelectedPlatform,
+
+        analysisOptions,
+        setAnalysisOptions,
+
+        fetchChats,
+        startNewChat,
+        loadChat,
+        sendMessage
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
 };
 
 export const useChat = () => {
-  const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error('useChat must be used within ChatProvider');
-  }
-  return context;
+  const ctx = useContext(ChatContext);
+  if (!ctx) throw new Error('useChat must be used within a ChatProvider');
+  return ctx;
 };
-
-export default ChatContext;

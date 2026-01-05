@@ -1,118 +1,150 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Container, Row, Col, Button } from 'reactstrap';
-import { ArrowUp, Settings } from 'lucide-react';
-import AnalysisOptionsModal from './AnalysisOptionsModal';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Container, Row, Col, Input, Button } from 'reactstrap';
+import { Clock4, Globe, ArrowUp } from 'lucide-react';
+import { useChat } from '../../../api/context/ChatContext';
 import './ChatInput.css';
 
-export default function ChatInput({ value, onChange, onSend, disabled, isInitial }) {
+const TIMEFRAMES = [
+  { value: 'last24hours', label: '24h' },
+  { value: 'last7days', label: '7d' },
+  { value: 'last30days', label: '30d' },
+  { value: 'last90days', label: '90d' }
+];
+
+const LANGUAGES = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'all', label: 'All' }
+];
+
+export default function ChatInput({ value, onChange, onSend, disabled }) {
   const [inputValue, setInputValue] = useState(value || '');
-  const [optionsOpen, setOptionsOpen] = useState(false);
   const textareaRef = useRef(null);
 
+  const { analysisOptions, setAnalysisOptions } = useChat();
+
   useEffect(() => {
-    if (value !== undefined) {
-      setInputValue(value);
-    }
+    if (value !== undefined) setInputValue(value);
   }, [value]);
 
   useEffect(() => {
-    adjustTextareaHeight();
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 180) + 'px';
   }, [inputValue]);
 
-  const adjustTextareaHeight = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
-    }
-  };
-
-  const handleChange = (e) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    if (onChange) onChange(newValue);
-  };
+  const hasContent = useMemo(() => inputValue.trim().length > 0, [inputValue]);
 
   const handleSubmit = () => {
-    if (inputValue.trim() && !disabled) {
-      onSend(inputValue);
-      setInputValue('');
-      if (onChange) onChange('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-    }
+    const trimmed = inputValue.trim();
+    if (!trimmed || disabled) return;
+    onSend(trimmed);
+    setInputValue('');
+    onChange?.('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e) => {
+    if (e.isComposing) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
 
-  const toggleOptions = () => setOptionsOpen(!optionsOpen);
-
-  const hasContent = inputValue.trim().length > 0;
+  const activeTf = analysisOptions?.timeframe || 'last7days';
+  const activeLang = analysisOptions?.language || 'en';
 
   return (
-    <div className="chat-input-container">
+    <div className="syn-modernComposer">
       <Container>
         <Row className="justify-content-center">
           <Col xs={12} lg={10} xl={8}>
-            <div className="chat-input-box">
-              {/* Input Area */}
-              <div className="chat-input-main">
+            <div className={`syn-modernBar ${disabled ? 'is-disabled' : ''}`}>
+              <div className="syn-modernChips">
+                <div className="syn-chipGroup">
+                  <span className="syn-chipIcon" aria-hidden="true">
+                    <Clock4 size={16} />
+                  </span>
+
+                  {TIMEFRAMES.map((tf) => {
+                    const active = activeTf === tf.value;
+                    return (
+                      <button
+                        key={tf.value}
+                        type="button"
+                        className={`syn-chip ${active ? 'is-active' : ''}`}
+                        onClick={() => setAnalysisOptions((p) => ({ ...p, timeframe: tf.value }))}
+                        disabled={disabled}
+                        aria-pressed={active}
+                      >
+                        {tf.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="syn-chipGroup">
+                  <span className="syn-chipIcon" aria-hidden="true">
+                    <Globe size={16} />
+                  </span>
+
+                  <Input
+                    type="select"
+                    bsSize="sm"
+                    value={activeLang}
+                    onChange={(e) => setAnalysisOptions((p) => ({ ...p, language: e.target.value }))}
+                    disabled={disabled}
+                    className="syn-chipSelect"
+                    aria-label="Language"
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <option key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </Input>
+                </div>
+              </div>
+
+              <div className="syn-modernInputRow">
                 <textarea
                   ref={textareaRef}
-                  className="chat-textarea"
-                  placeholder="Message SentimentAI..."
+                  className="syn-modernTextarea"
+                  placeholder="Message SentimentAI…"
                   value={inputValue}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    onChange?.(e.target.value);
+                  }}
                   onKeyDown={handleKeyDown}
                   disabled={disabled}
                   rows={1}
                 />
-              </div>
 
-              {/* Bottom Actions */}
-              <div className="chat-input-actions">
-                <div className="chat-input-left">
-                  <Button 
-                    color="link" 
-                    className="options-btn" 
-                    onClick={toggleOptions}
-                    title="Analysis Options"
-                  >
-                    <Settings size={18} />
-                    <span>Options</span>
-                  </Button>
-                </div>
-                <div className="chat-input-right">
-                  <button
-                    className={`send-btn ${hasContent ? 'active' : ''}`}
-                    onClick={handleSubmit}
-                    disabled={disabled || !hasContent}
-                  >
-                    <ArrowUp size={18} />
-                  </button>
-                </div>
+                <Button
+                  type="button"
+                  className="syn-modernSend"
+                  onClick={handleSubmit}
+                  disabled={disabled || !hasContent}
+                  aria-label="Send"
+                >
+                  <ArrowUp size={18} />
+                </Button>
               </div>
             </div>
 
-            {/* Disclaimer */}
-            <p className="chat-disclaimer">
-              SentimentAI can make mistakes. Consider verifying important information.
-            </p>
+            <div className="syn-modernFooter">
+              <div className="syn-modernDisclaimer">
+                SentimentAI can make mistakes. Consider verifying important information.
+              </div>
+            </div>
           </Col>
         </Row>
       </Container>
-
-      {/* Options Modal */}
-      <AnalysisOptionsModal 
-        isOpen={optionsOpen} 
-        toggle={toggleOptions} 
-      />
     </div>
   );
 }

@@ -1,23 +1,36 @@
 import * as SentimentOrchestrator from '../services/orchestrator.js';
 import Analysis from '../models/Analysis.js';
-import {
-  sendSuccessResponse,
-  sendErrorResponse
-} from '../../helpers/responseHelpers.js';
+import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
+
+const buildOptions = (body = {}) => ({
+  timeframe: body.timeframe || 'last7days',
+  language: body.language || 'en',
+  platforms: body.platforms || { twitter: true, reddit: true, bluesky: true }
+});
+
+const buildDateRange = (samplePosts = []) => {
+  const times = samplePosts
+    .map(p => new Date(p.created_at).getTime())
+    .filter(t => Number.isFinite(t));
+
+  if (times.length === 0) return null;
+
+  return {
+    start: new Date(Math.min(...times)),
+    end: new Date(Math.max(...times))
+  };
+};
+
 
 export const analyzeText = async (req, res) => {
   try {
     const { text } = req.body;
-
-    if (!text || text.trim().length === 0) {
-      return sendErrorResponse(res, 'Text is required', 400);
-    }
+    if (!text || text.trim().length === 0) return sendErrorResponse(res, 'Text is required', 400);
 
     const startTime = Date.now();
     const result = await SentimentOrchestrator.analyzeText(text);
     const processingTime = Date.now() - startTime;
 
-    // Save to database
     const analysis = await Analysis.create({
       user: req.user._id,
       query: text.substring(0, 100),
@@ -33,15 +46,13 @@ export const analyzeText = async (req, res) => {
       },
       totalAnalyzed: 1,
       samplePosts: [{
-        text: text,
+        text,
         platform: 'text',
         sentiment: result.sentiment,
         confidence: Math.round(result.confidence * 100),
         created_at: new Date()
       }],
-      metadata: {
-        processingTime
-      }
+      metadata: { processingTime }
     });
 
     return sendSuccessResponse(res, 'Text analyzed successfully', {
@@ -52,7 +63,6 @@ export const analyzeText = async (req, res) => {
       processingTime
     });
   } catch (error) {
-    console.error('Analyze text error:', error);
     return sendErrorResponse(res, error.message || 'Failed to analyze text', 500);
   }
 };
@@ -60,23 +70,17 @@ export const analyzeText = async (req, res) => {
 export const analyzeTwitter = async (req, res) => {
   try {
     const { query, maxResults = 100 } = req.body;
+    if (!query || query.trim().length === 0) return sendErrorResponse(res, 'Search query is required', 400);
 
-    if (!query || query.trim().length === 0) {
-      return sendErrorResponse(res, 'Search query is required', 400);
-    }
+    const options = buildOptions(req.body);
 
     const startTime = Date.now();
-    const result = await SentimentOrchestrator.analyzeTwitter(query, maxResults);
+    const result = await SentimentOrchestrator.analyzeTwitter(query, maxResults, options);
     const processingTime = Date.now() - startTime;
 
-    // Calculate date range
-    const dates = result.samplePosts.map(post => new Date(post.created_at));
-    const dateRange = {
-      start: new Date(Math.min(...dates)),
-      end: new Date(Math.max(...dates))
-    };
+    const dateRange = buildDateRange(result.samplePosts);
 
-    // Save to database
+
     const analysis = await Analysis.create({
       user: req.user._id,
       query,
@@ -94,32 +98,17 @@ export const analyzeTwitter = async (req, res) => {
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
-      metadata: {
-        timestamp: result.timestamp,
-        processingTime,
-        platforms: ['twitter']
-      }
+      metadata: { timestamp: result.timestamp, processingTime, options }
     });
 
     return sendSuccessResponse(res, 'Twitter analysis completed successfully', {
+      ...result,
       analysisId: analysis._id,
-      query,
-      source: 'twitter',
-      sentiment: result.overall_sentiment,
-      percentages: result.percentages,
-      scores: result.average_scores,
-      distribution: result.sentiment_distribution,
-      totalAnalyzed: result.total_analyzed,
-      insights: result.insights,
-      platformBreakdown: result.platformBreakdown,
-      timeAnalysis: result.timeAnalysis,
-      topKeywords: result.topKeywords,
-      samplePosts: result.samplePosts,
       dateRange,
       processingTime
     });
   } catch (error) {
-    console.error('Analyze Twitter error:', error);
+    // ✅ return clearer message for user-caused errors
     return sendErrorResponse(res, error.message || 'Failed to analyze Twitter data', 500);
   }
 };
@@ -127,23 +116,17 @@ export const analyzeTwitter = async (req, res) => {
 export const analyzeReddit = async (req, res) => {
   try {
     const { query, maxResults = 100 } = req.body;
+    if (!query || query.trim().length === 0) return sendErrorResponse(res, 'Search query is required', 400);
 
-    if (!query || query.trim().length === 0) {
-      return sendErrorResponse(res, 'Search query is required', 400);
-    }
+    const options = buildOptions(req.body);
 
     const startTime = Date.now();
-    const result = await SentimentOrchestrator.analyzeReddit(query, maxResults);
+    const result = await SentimentOrchestrator.analyzeReddit(query, maxResults, options);
     const processingTime = Date.now() - startTime;
 
-    // Calculate date range
-    const dates = result.samplePosts.map(post => new Date(post.created_at));
-    const dateRange = {
-      start: new Date(Math.min(...dates)),
-      end: new Date(Math.max(...dates))
-    };
+    const dateRange = buildDateRange(result.samplePosts);
 
-    // Save to database
+
     const analysis = await Analysis.create({
       user: req.user._id,
       query,
@@ -161,21 +144,44 @@ export const analyzeReddit = async (req, res) => {
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
-      metadata: {
-        timestamp: result.timestamp,
-        processingTime,
-        platforms: ['reddit']
-      }
+      metadata: { timestamp: result.timestamp, processingTime, options }
     });
 
     return sendSuccessResponse(res, 'Reddit analysis completed successfully', {
+      ...result,
       analysisId: analysis._id,
+      dateRange,
+      processingTime
+    });
+  } catch (error) {
+    return sendErrorResponse(res, error.message || 'Failed to analyze Reddit data', 500);
+  }
+};
+
+export const analyzeBluesky = async (req, res) => {
+  try {
+    const { query, maxResults = 100 } = req.body;
+    if (!query || query.trim().length === 0) return sendErrorResponse(res, 'Search query is required', 400);
+
+    const options = buildOptions(req.body);
+
+    const startTime = Date.now();
+    const result = await SentimentOrchestrator.analyzeBluesky(query, maxResults, options);
+    const processingTime = Date.now() - startTime;
+
+    const dateRange = buildDateRange(result.samplePosts);
+
+
+    const analysis = await Analysis.create({
+      user: req.user._id,
       query,
-      source: 'reddit',
-      sentiment: result.overall_sentiment,
-      percentages: result.percentages,
-      scores: result.average_scores,
-      distribution: result.sentiment_distribution,
+      source: 'bluesky',
+      sentiment: {
+        overall: result.overall_sentiment,
+        scores: result.average_scores,
+        percentages: result.percentages,
+        distribution: result.sentiment_distribution
+      },
       totalAnalyzed: result.total_analyzed,
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
@@ -183,34 +189,37 @@ export const analyzeReddit = async (req, res) => {
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
+      metadata: { timestamp: result.timestamp, processingTime, options }
+    });
+
+    return sendSuccessResponse(res, 'Bluesky analysis completed successfully', {
+      ...result,
+      analysisId: analysis._id,
+      dateRange,
       processingTime
     });
   } catch (error) {
-    console.error('Analyze Reddit error:', error);
-    return sendErrorResponse(res, error.message || 'Failed to analyze Reddit data', 500);
+    // ✅ If creds missing, make it a clear client message
+    const msg = error.message || 'Failed to analyze Bluesky data';
+    const isCreds = msg.toLowerCase().includes('credentials') || msg.toLowerCase().includes('not configured');
+    return sendErrorResponse(res, msg, isCreds ? 400 : 500);
   }
 };
 
 export const analyzeMultiPlatform = async (req, res) => {
   try {
     const { query, maxResults = 100 } = req.body;
+    if (!query || query.trim().length === 0) return sendErrorResponse(res, 'Search query is required', 400);
 
-    if (!query || query.trim().length === 0) {
-      return sendErrorResponse(res, 'Search query is required', 400);
-    }
+    const options = buildOptions(req.body);
 
     const startTime = Date.now();
-    const result = await SentimentOrchestrator.analyzeMultiplePlatforms(query, maxResults);
+    const result = await SentimentOrchestrator.analyzeMultiplePlatforms(query, maxResults, options);
     const processingTime = Date.now() - startTime;
 
-    // Calculate date range
-    const dates = result.samplePosts.map(post => new Date(post.created_at));
-    const dateRange = {
-      start: new Date(Math.min(...dates)),
-      end: new Date(Math.max(...dates))
-    };
+    const dateRange = buildDateRange(result.samplePosts);
 
-    // Save to database
+
     const analysis = await Analysis.create({
       user: req.user._id,
       query,
@@ -226,67 +235,33 @@ export const analyzeMultiPlatform = async (req, res) => {
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
-      metadata: {
-        timestamp: result.timestamp,
-        processingTime,
-        platforms: ['twitter', 'reddit']
-      }
+      metadata: { timestamp: result.timestamp, processingTime, options }
     });
 
     return sendSuccessResponse(res, 'Multi-platform analysis completed successfully', {
+      ...result,
       analysisId: analysis._id,
-      query,
-      source: 'multi-platform',
-      sentiment: result.overall_sentiment,
-      percentages: result.percentages,
-      distribution: result.sentiment_distribution,
-      totalAnalyzed: result.total_analyzed,
-      insights: result.insights,
-      platformBreakdown: result.platformBreakdown,
-      topKeywords: result.topKeywords,
-      samplePosts: result.samplePosts,
       dateRange,
-      platforms: {
-        twitter: result.platforms.twitter,
-        reddit: result.platforms.reddit
-      },
       processingTime
     });
   } catch (error) {
-    console.error('Analyze multi-platform error:', error);
     return sendErrorResponse(res, error.message || 'Failed to analyze multi-platform data', 500);
   }
 };
-
+// 📜 Get user's analysis history
 export const getHistory = async (req, res) => {
   try {
-    const { page = 1, limit = 10, source } = req.query;
-
-    const query = { user: req.user._id };
-    if (source) {
-      query.source = source;
-    }
-
-    const analyses = await Analysis.find(query)
+    const analyses = await Analysis.find({ user: req.user._id })
       .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .select('-samplePosts -timeAnalysis');
+      .limit(50);
 
-    const count = await Analysis.countDocuments(query);
-
-    return sendSuccessResponse(res, 'Analysis history retrieved successfully', {
-      analyses,
-      totalPages: Math.ceil(count / limit),
-      currentPage: parseInt(page),
-      totalAnalyses: count
-    });
+    return sendSuccessResponse(res, 'Analysis history fetched successfully', analyses);
   } catch (error) {
-    console.error('Get history error:', error);
-    return sendErrorResponse(res, 'Failed to fetch analysis history', 500);
+    return sendErrorResponse(res, error.message || 'Failed to fetch history', 500);
   }
 };
 
+// 🔍 Get single analysis by ID
 export const getAnalysisById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -300,20 +275,47 @@ export const getAnalysisById = async (req, res) => {
       return sendErrorResponse(res, 'Analysis not found', 404);
     }
 
-    return sendSuccessResponse(res, 'Analysis retrieved successfully', analysis);
+    return sendSuccessResponse(res, 'Analysis fetched successfully', analysis);
   } catch (error) {
-    console.error('Get analysis error:', error);
-    return sendErrorResponse(res, 'Failed to fetch analysis', 500);
+    return sendErrorResponse(res, error.message || 'Failed to fetch analysis', 500);
   }
 };
 
+// 📊 Get sentiment statistics summary
+export const getStatistics = async (req, res) => {
+  try {
+    const stats = await Analysis.aggregate([
+      { $match: { user: req.user._id } },
+      {
+        $group: {
+          _id: '$sentiment.overall',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const formatted = {
+      positive: 0,
+      neutral: 0,
+      negative: 0
+    };
+
+    stats.forEach(s => {
+      formatted[s._id] = s.count;
+    });
+
+    return sendSuccessResponse(res, 'Statistics fetched successfully', formatted);
+  } catch (error) {
+    return sendErrorResponse(res, error.message || 'Failed to fetch statistics', 500);
+  }
+};
 export const deleteAnalysis = async (req, res) => {
   try {
     const { id } = req.params;
 
     const analysis = await Analysis.findOneAndDelete({
       _id: id,
-      user: req.user._id
+      user: req.user._id // 🔐 ensure user owns the analysis
     });
 
     if (!analysis) {
@@ -322,110 +324,6 @@ export const deleteAnalysis = async (req, res) => {
 
     return sendSuccessResponse(res, 'Analysis deleted successfully');
   } catch (error) {
-    console.error('Delete analysis error:', error);
-    return sendErrorResponse(res, 'Failed to delete analysis', 500);
-  }
-};
-
-export const getStatistics = async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    // Total analyses
-    const totalAnalyses = await Analysis.countDocuments({ user: userId });
-
-    // Analyses by source
-    const bySource = await Analysis.aggregate([
-      { $match: { user: userId } },
-      { $group: { _id: '$source', count: { $sum: 1 } } }
-    ]);
-
-    // Recent sentiment trends
-    const recentAnalyses = await Analysis.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .select('sentiment.overall createdAt query');
-
-    // Most analyzed topics
-    const topQueries = await Analysis.aggregate([
-      { $match: { user: userId } },
-      { $group: { _id: '$query', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
-    ]);
-
-    return sendSuccessResponse(res, 'Statistics retrieved successfully', {
-      totalAnalyses,
-      bySource,
-      recentAnalyses,
-      topQueries
-    });
-  } catch (error) {
-    console.error('Get statistics error:', error);
-    return sendErrorResponse(res, 'Failed to fetch statistics', 500);
-  }
-};
-export const analyzeBluesky = async (req, res) => {
-  try {
-    const { query, maxResults = 100 } = req.body;
-
-    if (!query || query.trim().length === 0) {
-      return sendErrorResponse(res, 'Search query is required', 400);
-    }
-
-    const startTime = Date.now();
-    const result = await SentimentOrchestrator.analyzeBluesky(query, maxResults);
-    const processingTime = Date.now() - startTime;
-
-    const dates = result.samplePosts.map(post => new Date(post.created_at));
-    const dateRange = {
-      start: new Date(Math.min(...dates)),
-      end: new Date(Math.max(...dates))
-    };
-
-    const analysis = await Analysis.create({
-      user: req.user._id,
-      query,
-      source: 'bluesky',
-      sentiment: {
-        overall: result.overall_sentiment,
-        scores: result.average_scores,
-        percentages: result.percentages,
-        distribution: result.sentiment_distribution
-      },
-      totalAnalyzed: result.total_analyzed,
-      insights: result.insights,
-      platformBreakdown: result.platformBreakdown,
-      timeAnalysis: result.timeAnalysis,
-      topKeywords: result.topKeywords,
-      samplePosts: result.samplePosts,
-      dateRange,
-      metadata: {
-        timestamp: result.timestamp,
-        processingTime,
-        platforms: ['bluesky']
-      }
-    });
-
-    return sendSuccessResponse(res, 'Bluesky analysis completed successfully', {
-      analysisId: analysis._id,
-      query,
-      source: 'bluesky',
-      sentiment: result.overall_sentiment,
-      percentages: result.percentages,
-      scores: result.average_scores,
-      distribution: result.sentiment_distribution,
-      totalAnalyzed: result.total_analyzed,
-      insights: result.insights,
-      platformBreakdown: result.platformBreakdown,
-      timeAnalysis: result.timeAnalysis,
-      topKeywords: result.topKeywords,
-      samplePosts: result.samplePosts,
-      dateRange,
-      processingTime
-    });
-  } catch (error) {
-    console.error('Analyze Bluesky error:', error);
-    return sendErrorResponse(res, error.message || 'Failed to analyze Bluesky data', 500);
+    return sendErrorResponse(res, error.message || 'Failed to delete analysis', 500);
   }
 };

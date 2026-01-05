@@ -1,3 +1,9 @@
+/* =========================================================
+   index.css (optimized, same visuals)
+   - Deduplicated gradients + typography via CSS variables
+   - Kept existing class names and rendered styles identical
+   ========================================================= */
+
 /* Import Inter Font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -7,9 +13,12 @@ html {
 }
 
 :root {
+  /* Base typography/rendering */
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  /* Keep existing values (even if app is light) */
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
@@ -19,103 +28,119 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Gradient Variables */
-  --gradient-primary: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
-  --gradient-primary-80: linear-gradient(135deg, rgba(21, 93, 252, 0.8) 0%, rgba(152, 16, 250, 0.8) 100%);
-  --gradient-primary-10: linear-gradient(135deg, rgba(21, 93, 252, 0.1) 0%, rgba(152, 16, 250, 0.1) 100%);
-  
-  /* Color Variables */
+  /* -------- Brand colors -------- */
   --color-primary-start: #155DFC;
   --color-primary-end: #9810FA;
-  
+
+  /* -------- Gradients -------- */
+  --gradient-primary: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  --gradient-primary-80: linear-gradient(
+    135deg,
+    rgba(21, 93, 252, 0.8) 0%,
+    rgba(152, 16, 250, 0.8) 100%
+  );
+  --gradient-primary-10: linear-gradient(
+    135deg,
+    rgba(21, 93, 252, 0.1) 0%,
+    rgba(152, 16, 250, 0.1) 100%
+  );
+
+  /* -------- Fonts -------- */
   --font-family: 'Inter', system-ui, sans-serif;
 
-  /* Typography Variables */
+  /* -------- Type scale -------- */
   --font-size-normal: 12.5px;
   --font-size-subtitle: 10.5px;
   --font-size-heading: 18px;
   --font-size-subheading: 14px;
 
+  /* -------- Font weights -------- */
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* Helpers */
+  --radius-8: 8px;
+  --btn-bg: #1a1a1a;
+  --link: #646cff;
+  --link-hover: #535bf2;
 }
 
+/* Links */
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--link);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--link-hover);
 }
 
+/* Body */
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-family);
 }
 
+/* Headings */
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
   font-family: 'Inter', sans-serif;
 }
-
-h2, h3, h4, h5, h6 {
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Inter', sans-serif;
 }
 
+/* Buttons */
 button {
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: 'Inter', inherit;
-  background-color: #1a1a1a;
+  background-color: var(--btn-bg);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--link);
 }
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Gradient Utility Classes */
-.gradient-primary {
-  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
-}
+/* ========================================
+   GRADIENT UTILITY CLASSES (same output)
+   ======================================== */
 
-.gradient-primary-80 {
-  background: linear-gradient(135deg, rgba(21, 93, 252, 0.8) 0%, rgba(152, 16, 250, 0.8) 100%);
-}
-
-.gradient-primary-10 {
-  background: linear-gradient(135deg, rgba(21, 93, 252, 0.1) 0%, rgba(152, 16, 250, 0.1) 100%);
-}
-
-/* Alternative utility names */
+.gradient-primary,
 .bg-gradient-100 {
-  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  background: var(--gradient-primary);
 }
 
+.gradient-primary-80,
 .bg-gradient-80 {
-  background: linear-gradient(135deg, rgba(21, 93, 252, 0.8) 0%, rgba(152, 16, 250, 0.8) 100%);
+  background: var(--gradient-primary-80);
 }
 
+.gradient-primary-10,
 .bg-gradient-10 {
-  background: linear-gradient(135deg, rgba(21, 93, 252, 0.1) 0%, rgba(152, 16, 250, 0.1) 100%);
+  background: var(--gradient-primary-10);
 }
 
 /* Gradient Text */
 .gradient-text {
-  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -124,16 +149,15 @@ button:focus-visible {
 /* Gradient Border */
 .gradient-border {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
 }
-
 .gradient-border::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  background: var(--gradient-primary);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -143,149 +167,152 @@ button:focus-visible {
 .hover-gradient {
   transition: all 0.3s ease;
 }
-
 .hover-gradient:hover {
-  background: linear-gradient(135deg, #155DFC 0%, #9810FA 100%);
+  background: var(--gradient-primary);
   color: white;
 }
 
 /* ========================================
-   TYPOGRAPHY UTILITY CLASSES
+   TYPOGRAPHY UTILITY CLASSES (same output)
    ======================================== */
+
+/* Base helpers (avoid repeating family everywhere) */
+.text-normal-regular,
+.normal-regular,
+.text-normal-medium,
+.normal-medium,
+.text-normal-semibold,
+.normal-semibold,
+.text-normal-bold,
+.normal-bold,
+.text-subtitle-regular,
+.subtitle-regular,
+.text-subtitle-medium,
+.subtitle-medium,
+.text-subtitle-semibold,
+.subtitle-semibold,
+.text-subtitle-bold,
+.subtitle-bold,
+.text-heading-regular,
+.heading-regular,
+.text-heading-medium,
+.heading-medium,
+.text-heading-semibold,
+.heading-semibold,
+.text-heading-bold,
+.heading-bold,
+.text-subheading-regular,
+.subheading-regular,
+.text-subheading-medium,
+.subheading-medium,
+.text-subheading-semibold,
+.subheading-semibold,
+.text-subheading-bold,
+.subheading-bold {
+  font-family: 'Inter', sans-serif;
+}
 
 /* NORMAL - 12.5px */
 .text-normal-regular,
 .normal-regular {
-  font-size: 12.5px;
-  font-weight: 400;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-regular);
 }
-
 .text-normal-medium,
 .normal-medium {
-  font-size: 12.5px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-medium);
 }
-
 .text-normal-semibold,
 .normal-semibold {
-  font-size: 12.5px;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-semibold);
 }
-
 .text-normal-bold,
 .normal-bold {
-  font-size: 12.5px;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-bold);
 }
 
 /* SUBTITLE - 10.5px */
 .text-subtitle-regular,
 .subtitle-regular {
-  font-size: 10.5px;
-  font-weight: 400;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subtitle);
+  font-weight: var(--font-weight-regular);
 }
-
 .text-subtitle-medium,
 .subtitle-medium {
-  font-size: 10.5px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subtitle);
+  font-weight: var(--font-weight-medium);
 }
-
 .text-subtitle-semibold,
 .subtitle-semibold {
-  font-size: 10.5px;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subtitle);
+  font-weight: var(--font-weight-semibold);
 }
-
 .text-subtitle-bold,
 .subtitle-bold {
-  font-size: 10.5px;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subtitle);
+  font-weight: var(--font-weight-bold);
 }
 
 /* HEADING - 18px */
 .text-heading-regular,
 .heading-regular {
-  font-size: 18px;
-  font-weight: 400;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-regular);
 }
-
 .text-heading-medium,
 .heading-medium {
-  font-size: 18px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-medium);
 }
-
 .text-heading-semibold,
 .heading-semibold {
-  font-size: 18px;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-semibold);
 }
-
 .text-heading-bold,
 .heading-bold {
-  font-size: 18px;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-bold);
 }
 
 /* SUBHEADING - 14px */
 .text-subheading-regular,
 .subheading-regular {
-  font-size: 14px;
-  font-weight: 400;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subheading);
+  font-weight: var(--font-weight-regular);
 }
-
 .text-subheading-medium,
 .subheading-medium {
-  font-size: 14px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subheading);
+  font-weight: var(--font-weight-medium);
 }
-
 .text-subheading-semibold,
 .subheading-semibold {
-  font-size: 14px;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subheading);
+  font-weight: var(--font-weight-semibold);
 }
-
 .text-subheading-bold,
 .subheading-bold {
-  font-size: 14px;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-size: var(--font-size-subheading);
+  font-weight: var(--font-weight-bold);
 }
 
 /* Font Weight Only Utilities */
 .fw-regular {
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
 }
-
 .fw-medium {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
-
 .fw-semibold {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
-
 .fw-bold {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
-
 
 /* Main content offset for fixed sidebar */
 .main-content {

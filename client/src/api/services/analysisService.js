@@ -1,48 +1,37 @@
 import api from '../apiService';
 
-export const analyzeMultiPlatform = async (query, maxResults = 100) => {
-  const response = await api.post('/analysis/multi-platform', { query, maxResults });
+const PLATFORM_ENDPOINTS = {
+  twitter: '/analysis/twitter',
+  reddit: '/analysis/reddit',
+  bluesky: '/analysis/bluesky'
+};
+
+const basePayload = (query, options, maxResults) => ({
+  query,
+  maxResults,
+  timeframe: options?.timeframe || 'last7days',
+  language: options?.language || 'en'
+});
+
+export const analyzePlatform = async (platform, query, options = {}, maxResults = 100) => {
+  const endpoint = PLATFORM_ENDPOINTS[platform];
+  if (!endpoint) return analyzeMultiPlatform(query, options, maxResults);
+
+  const response = await api.post(endpoint, basePayload(query, options, maxResults));
   return response.data;
 };
 
-export const analyzeTwitter = async (query, maxResults = 100) => {
-  const response = await api.post('/analysis/twitter', { query, maxResults });
-  return response.data;
-};
+export const analyzeMultiPlatform = async (query, options = {}, maxResults = 100) => {
+  const payload = {
+    ...basePayload(query, options, maxResults),
+    platforms: options?.platforms || { twitter: true, reddit: true, bluesky: true }
+  };
 
-export const analyzeReddit = async (query, maxResults = 100) => {
-  const response = await api.post('/analysis/reddit', { query, maxResults });
-  return response.data;
-};
-
-export const analyzeBluesky = async (query, maxResults = 100) => {
-  const response = await api.post('/analysis/bluesky', { query, maxResults });
+  const response = await api.post('/analysis/multi-platform', payload);
   return response.data;
 };
 
 export const analyzeText = async (text) => {
   const response = await api.post('/analysis/text', { text });
-  return response.data;
-};
-
-export const getHistory = async (page = 1, limit = 10, source = null) => {
-  let url = `/analysis/history?page=${page}&limit=${limit}`;
-  if (source) url += `&source=${source}`;
-  const response = await api.get(url);
-  return response.data;
-};
-
-export const getAnalysisById = async (id) => {
-  const response = await api.get(`/analysis/${id}`);
-  return response.data;
-};
-
-export const deleteAnalysis = async (id) => {
-  const response = await api.delete(`/analysis/${id}`);
-  return response.data;
-};
-
-export const getStatistics = async () => {
-  const response = await api.get('/analysis/statistics');
   return response.data;
 };

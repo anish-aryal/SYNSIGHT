@@ -29,66 +29,40 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
   const toggle = () => setDropdownOpen(!dropdownOpen);
 
   const platforms = [
-    { 
-      id: 'all', 
-      name: 'All Platforms', 
-      icon: Globe, 
-      description: 'Search across all platforms',
-      color: 'all'
-    },
-    { 
-      id: 'twitter', 
-      name: 'Twitter / X', 
-      icon: Twitter, 
-      description: 'Posts from X (Twitter)',
-      color: 'twitter'
-    },
-    { 
-      id: 'reddit', 
-      name: 'Reddit', 
-      icon: MessageSquareText, 
-      description: 'Reddit posts & comments',
-      color: 'reddit'
-    },
-    { 
-      id: 'bluesky', 
-      name: 'Bluesky', 
-      icon: CloudSun, 
-      description: 'Bluesky posts',
-      color: 'bluesky'
-    }
+    { id: 'all', name: 'All Platforms', icon: Globe, description: 'Search across all platforms', color: 'all' },
+    { id: 'twitter', name: 'Twitter / X', icon: Twitter, description: 'Posts from X (Twitter)', color: 'twitter' },
+    { id: 'reddit', name: 'Reddit', icon: MessageSquareText, description: 'Reddit posts & comments', color: 'reddit' },
+    { id: 'bluesky', name: 'Bluesky', icon: CloudSun, description: 'Bluesky posts', color: 'bluesky' }
   ];
 
   const currentPlatform = platforms.find(p => p.id === selectedPlatform) || platforms[0];
 
-  const handlePlatformSelect = (platformId) => {
-    setSelectedPlatform(platformId);
-  };
+  const handlePlatformSelect = (platformId) => setSelectedPlatform(platformId);
 
   return (
     <Container fluid className="chat-header py-2 px-3">
       <Row className="align-items-center">
         <Col xs="auto">
           <Dropdown isOpen={dropdownOpen} toggle={toggle}>
-            <DropdownToggle 
-              tag="div" 
-              className="model-selector"
-            >
+            <DropdownToggle tag="div" className="model-selector">
               <Sparkles size={18} className="text-primary" />
               <span className="model-name">SentimentAI</span>
               <span className="platform-badge">{currentPlatform.name}</span>
-              <ChevronDown 
-                size={16} 
-                className={`text-muted dropdown-chevron ${dropdownOpen ? 'rotated' : ''}`} 
+              <ChevronDown
+                size={16}
+                className={`text-muted dropdown-chevron ${dropdownOpen ? 'rotated' : ''}`}
               />
             </DropdownToggle>
+
             <DropdownMenu className="platform-dropdown-menu">
               <div className="dropdown-header-text">Select Platform</div>
+
               {platforms.map((platform) => {
                 const IconComponent = platform.icon;
                 const isSelected = currentPlatform.id === platform.id;
+
                 return (
-                  <DropdownItem 
+                  <DropdownItem
                     key={platform.id}
                     onClick={() => handlePlatformSelect(platform.id)}
                     className={`platform-dropdown-item ${isSelected ? 'selected' : ''}`}
@@ -110,15 +84,15 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
                   </DropdownItem>
                 );
               })}
+
               <DropdownItem divider />
               <div className="dropdown-footer-text">
-                <small className="text-muted">
-                  More platforms coming soon
-                </small>
+                <small className="text-muted">More platforms coming soon</small>
               </div>
             </DropdownMenu>
           </Dropdown>
         </Col>
+
         <Col className="text-end">
           <div className="d-flex justify-content-end align-items-center gap-2">
             {!isInitial && (
@@ -132,6 +106,7 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
                   <Share2 size={16} />
                   <span className="d-none d-sm-inline">Share</span>
                 </Button>
+
                 <Button
                   outline
                   color="dark"
