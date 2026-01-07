@@ -8,6 +8,8 @@ import { extractKeywords } from '../utils/keywordExtractor.js';
 import { analyzeTimeDistribution } from '../utils/timeAnalyzer.js';
 import { generateInsights } from '../utils/InsightsGenerator.js';
 
+import { adjustForSarcasm } from '../utils/sarcasmDetector.js';
+
 const TIMEFRAME_MS = {
   last24hours: 24 * 60 * 60 * 1000,
   last7days: 7 * 24 * 60 * 60 * 1000,
@@ -31,7 +33,7 @@ const applyTimeframe = (items, timeframe, getDate) => {
   for (let i = 0; i < items.length; i++) {
     const rawDate = getDate(items[i]);
     const t = toMs(rawDate);
-    if (t === null) continue;       // invalid timestamps -> exclude
+    if (t === null) continue; // invalid timestamps -> exclude
     if (t >= cutoff) out.push(items[i]);
   }
 
@@ -39,10 +41,77 @@ const applyTimeframe = (items, timeframe, getDate) => {
 };
 
 const calcPercentages = (dist, total) => ({
-  positive: Math.round((dist.positive / total) * 100),
-  negative: Math.round((dist.negative / total) * 100),
-  neutral: Math.round((dist.neutral / total) * 100)
+  positive: total > 0 ? Math.round((dist.positive / total) * 100) : 0,
+  negative: total > 0 ? Math.round((dist.negative / total) * 100) : 0,
+  neutral: total > 0 ? Math.round((dist.neutral / total) * 100) : 0
 });
+
+// Normalize score shapes so adjustForSarcasm can work regardless of python field naming
+const normalizeScores = (r) => {
+  if (!r || typeof r !== 'object') return { positive: 0, negative: 0, neutral: 0, compound: 0 };
+
+  // Many possible shapes:
+  // 1) r.scores = {positive, negative, neutral, compound}
+  // 2) r.scores = {pos, neg, neu, compound}
+  // 3) r = {positive, negative, neutral, compound}
+  // 4) r = {pos, neg, neu, compound}
+  const s = r.scores && typeof r.scores === 'object' ? r.scores : r;
+
+  const positive = s.positive ?? s.pos ?? 0;
+  const negative = s.negative ?? s.neg ?? 0;
+  const neutral = s.neutral ?? s.neu ?? 0;
+  const compound = s.compound ?? 0;
+
+  return { positive, negative, neutral, compound };
+};
+
+const recomputeDistribution = (results) => {
+  const dist = { positive: 0, negative: 0, neutral: 0 };
+  for (const r of results) {
+    const s = (r?.sentiment || 'neutral').toLowerCase();
+    if (s === 'positive') dist.positive += 1;
+    else if (s === 'negative') dist.negative += 1;
+    else dist.neutral += 1;
+  }
+  return dist;
+};
+
+const recomputeAverages = (results) => {
+  if (!Array.isArray(results) || results.length === 0) {
+    return { positive: 0, negative: 0, neutral: 0, compound: 0 };
+  }
+
+  let sp = 0, sn = 0, sneu = 0, sc = 0;
+  let n = 0;
+
+  for (const r of results) {
+    const scores = normalizeScores(r);
+    // Skip rows that are completely empty/unusable
+    if (
+      typeof scores.positive !== 'number' ||
+      typeof scores.negative !== 'number' ||
+      typeof scores.neutral !== 'number' ||
+      typeof scores.compound !== 'number'
+    ) {
+      continue;
+    }
+
+    sp += scores.positive;
+    sn += scores.negative;
+    sneu += scores.neutral;
+    sc += scores.compound;
+    n += 1;
+  }
+
+  if (n === 0) return { positive: 0, negative: 0, neutral: 0, compound: 0 };
+
+  return {
+    positive: +(sp / n).toFixed(3),
+    negative: +(sn / n).toFixed(3),
+    neutral: +(sneu / n).toFixed(3),
+    compound: +(sc / n).toFixed(3)
+  };
+};
 
 export const analyzeText = async (text) => VaderService.analyzeSingleText(text);
 export const analyzeBulkTexts = async (texts) => VaderService.analyzeBulkTexts(texts);
@@ -70,108 +139,148 @@ const analyzePlatformCore = async ({
   const timeFiltered = applyTimeframe(raw, timeframe, getDate);
 
   // If timeframe eliminates everything, return a clear message
-if (timeFiltered.length === 0) {
-  return {
-    source: platform,
-    query,
-    timestamp: new Date().toISOString(),
-    overall_sentiment: 'neutral',
-    average_scores: { pos: 0, neu: 0, neg: 0, compound: 0 },
-    sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
-    percentages: { positive: 0, negative: 0, neutral: 0 },
-    total_analyzed: 0,
-    counts: {
-      fetched: raw.length,
-      afterTimeframe: 0,
-      afterFilters: 0,
-      removedByTimeframe: raw.length,
-      removedByFilters: 0
-    },
-    insights: {
-      overall: `No ${platform} posts were found within the selected timeframe (${timeframe}).`,
-      platformComparison: null,
-      topDrivers: [],
-      platformsAnalyzed: platform
-    },
-    topKeywords: [],
-    timeAnalysis: {
-      byHour: {},
-      byDay: {},
-      peakPeriod: null
-    },
-    samplePosts: [],
-    platformBreakdown: [{
-      platform: platform[0].toUpperCase() + platform.slice(1),
-      totalPosts: 0,
-      sentimentDistribution: { positive: 0, negative: 0, neutral: 0 }
-    }]
-  };
-}
-
+  if (timeFiltered.length === 0) {
+    return {
+      source: platform,
+      query,
+      timestamp: new Date().toISOString(),
+      overall_sentiment: 'neutral',
+      average_scores: { positive: 0, neutral: 0, negative: 0, compound: 0 },
+      sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
+      percentages: { positive: 0, negative: 0, neutral: 0 },
+      total_analyzed: 0,
+      counts: {
+        fetched: raw.length,
+        afterTimeframe: 0,
+        afterFilters: 0,
+        removedByTimeframe: raw.length,
+        removedByFilters: 0
+      },
+      insights: {
+        overall: `No ${platform} posts were found within the selected timeframe (${timeframe}).`,
+        platformComparison: null,
+        topDrivers: [],
+        platformsAnalyzed: platform
+      },
+      topKeywords: [],
+      timeAnalysis: {
+        byHour: {},
+        byDay: {},
+        peakPeriod: null
+      },
+      samplePosts: [],
+      sarcasm: { detected: 0, ratePercent: 0 },
+      platformBreakdown: [{
+        platform: platform[0].toUpperCase() + platform.slice(1),
+        totalPosts: 0,
+        sentimentDistribution: { positive: 0, negative: 0, neutral: 0 }
+      }]
+    };
+  }
 
   // Apply content/language filter next
   const filtered = filterPosts(timeFiltered, query, options);
 
-if (filtered.length === 0) {
-  const lang = options?.language || 'en';
+  if (filtered.length === 0) {
+    const lang = options?.language || 'en';
 
-  return {
-    source: platform,
-    query,
-    timestamp: new Date().toISOString(),
-    overall_sentiment: 'neutral',
-    average_scores: { pos: 0, neu: 0, neg: 0, compound: 0 },
-    sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
-    percentages: { positive: 0, negative: 0, neutral: 0 },
-    total_analyzed: 0,
-    counts: {
-      fetched: raw.length,
-      afterTimeframe: timeFiltered.length,
-      afterFilters: 0,
-      removedByTimeframe: raw.length - timeFiltered.length,
-      removedByFilters: timeFiltered.length
-    },
-    insights: {
-      overall: `No ${platform} posts remained after filtering (language: ${lang}, timeframe: ${timeframe}).`,
-      platformComparison: null,
-      topDrivers: [],
-      platformsAnalyzed: platform
-    },
-    topKeywords: [],
-    timeAnalysis: {
-      byHour: {},
-      byDay: {},
-      peakPeriod: null
-    },
-    samplePosts: [],
-    platformBreakdown: [{
-      platform: platform[0].toUpperCase() + platform.slice(1),
-      totalPosts: 0,
-      sentimentDistribution: { positive: 0, negative: 0, neutral: 0 }
-    }]
-  };
-}
-
+    return {
+      source: platform,
+      query,
+      timestamp: new Date().toISOString(),
+      overall_sentiment: 'neutral',
+      average_scores: { positive: 0, neutral: 0, negative: 0, compound: 0 },
+      sentiment_distribution: { positive: 0, negative: 0, neutral: 0 },
+      percentages: { positive: 0, negative: 0, neutral: 0 },
+      total_analyzed: 0,
+      counts: {
+        fetched: raw.length,
+        afterTimeframe: timeFiltered.length,
+        afterFilters: 0,
+        removedByTimeframe: raw.length - timeFiltered.length,
+        removedByFilters: timeFiltered.length
+      },
+      insights: {
+        overall: `No ${platform} posts remained after filtering (language: ${lang}, timeframe: ${timeframe}).`,
+        platformComparison: null,
+        topDrivers: [],
+        platformsAnalyzed: platform
+      },
+      topKeywords: [],
+      timeAnalysis: {
+        byHour: {},
+        byDay: {},
+        peakPeriod: null
+      },
+      samplePosts: [],
+      sarcasm: { detected: 0, ratePercent: 0 },
+      platformBreakdown: [{
+        platform: platform[0].toUpperCase() + platform.slice(1),
+        totalPosts: 0,
+        sentimentDistribution: { positive: 0, negative: 0, neutral: 0 }
+      }]
+    };
+  }
 
   const texts = new Array(filtered.length);
   for (let i = 0; i < filtered.length; i++) texts[i] = getText(filtered[i]);
 
   const analysis = await VaderService.analyzeBulkTexts(texts);
 
-  const total = analysis.total_analyzed || 0;
-  const dist = analysis.sentiment_distribution || { positive: 0, negative: 0, neutral: 0 };
-  const percentages =
-    total > 0 ? calcPercentages(dist, total) : { positive: 0, negative: 0, neutral: 0 };
+  const individual = Array.isArray(analysis.individual_results) ? analysis.individual_results : [];
+  const total = analysis.total_analyzed || filtered.length || 0;
 
-  const topKeywords = extractKeywords(texts, analysis.individual_results || []);
+  // ✅ Apply sarcasm adjustment per post (aligned by index)
+  const enrichedResults = new Array(filtered.length);
+  for (let i = 0; i < filtered.length; i++) {
+    const r = individual[i] || {};
+    const baseSentiment = r?.sentiment ?? 'neutral';
+    const baseScores = normalizeScores(r);
+
+    const adj = adjustForSarcasm(baseSentiment, baseScores, texts[i]);
+
+    enrichedResults[i] = {
+      ...r,
+      sentiment: adj.sentiment,
+      scores: adj.scores,
+      sarcasmDetected: adj.sarcasmDetected || false,
+      sarcasmConfidence: adj.sarcasmConfidence || 0,
+      sarcasmReasons: adj.sarcasmReasons || [],
+      // keep original confidence if present
+      confidence: r?.confidence ?? 0
+    };
+  }
+
+  // ✅ Recompute distribution/percentages from adjusted sentiments for consistency
+  const dist = recomputeDistribution(enrichedResults);
+  const percentages = total > 0 ? calcPercentages(dist, total) : { positive: 0, negative: 0, neutral: 0 };
+
+  // ✅ Determine overall sentiment from adjusted compound average
+  const average_scores = recomputeAverages(enrichedResults);
+
+  let overall_sentiment = 'neutral';
+  if (average_scores.compound >= 0.05) overall_sentiment = 'positive';
+  else if (average_scores.compound <= -0.05) overall_sentiment = 'negative';
+
+  // ✅ Sarcasm stats
+  const sarcasmDetectedCount = enrichedResults.filter(r => r?.sarcasmDetected).length;
+  const sarcasmRatePercent = total > 0 ? Math.round((sarcasmDetectedCount / total) * 100) : 0;
+
+  const topKeywords = extractKeywords(texts, enrichedResults);
   const timeAnalysis = analyzeTimeDistribution(filtered);
 
   const samplePosts = filtered.slice(0, 10).map((item, idx) =>
-    sampleMapper(item, analysis.individual_results?.[idx], platform)
+    sampleMapper(item, enrichedResults[idx], platform)
   );
 
   const insights = generateInsights(
-    { sentiment_distribution: dist, total_analyzed: total, topKeywords, timeAnalysis },
+    {
+      sentiment_distribution: dist,
+      total_analyzed: total,
+      topKeywords,
+      timeAnalysis,
+      sarcasm: { detected: sarcasmDetectedCount, ratePercent: sarcasmRatePercent }
+    },
     query
   );
 
@@ -179,8 +288,8 @@ if (filtered.length === 0) {
     source: platform,
     query,
     timestamp: new Date().toISOString(),
-    overall_sentiment: analysis.overall_sentiment,
-    average_scores: analysis.average_scores,
+    overall_sentiment,
+    average_scores,
     sentiment_distribution: dist,
     percentages,
     total_analyzed: total,
@@ -194,6 +303,7 @@ if (filtered.length === 0) {
       removedByFilters: timeFiltered.length - filtered.length
     },
 
+    sarcasm: { detected: sarcasmDetectedCount, ratePercent: sarcasmRatePercent },
     insights,
     topKeywords,
     timeAnalysis,
@@ -205,7 +315,6 @@ if (filtered.length === 0) {
     }]
   };
 };
-
 
 export const analyzeTwitter = async (query, maxResults = 100, options = {}) => {
   try {
@@ -222,6 +331,9 @@ export const analyzeTwitter = async (query, maxResults = 100, options = {}) => {
         platform: 'twitter',
         sentiment: r?.sentiment ?? 'neutral',
         confidence: Math.round((r?.confidence ?? 0) * 100),
+        sarcasmDetected: r?.sarcasmDetected || false,
+        sarcasmConfidence: Math.round((r?.sarcasmConfidence ?? 0) * 100),
+        sarcasmReasons: r?.sarcasmReasons || [],
         created_at: tweet.created_at,
         metrics: tweet.metrics
       })
@@ -246,6 +358,9 @@ export const analyzeReddit = async (query, maxResults = 100, options = {}) => {
         platform: 'reddit',
         sentiment: r?.sentiment ?? 'neutral',
         confidence: Math.round((r?.confidence ?? 0) * 100),
+        sarcasmDetected: r?.sarcasmDetected || false,
+        sarcasmConfidence: Math.round((r?.sarcasmConfidence ?? 0) * 100),
+        sarcasmReasons: r?.sarcasmReasons || [],
         created_at: post.created_at,
         metrics: { score: post.score, comments: post.num_comments }
       })
@@ -270,6 +385,9 @@ export const analyzeBluesky = async (query, maxResults = 100, options = {}) => {
         platform: 'bluesky',
         sentiment: r?.sentiment ?? 'neutral',
         confidence: Math.round((r?.confidence ?? 0) * 100),
+        sarcasmDetected: r?.sarcasmDetected || false,
+        sarcasmConfidence: Math.round((r?.sarcasmConfidence ?? 0) * 100),
+        sarcasmReasons: r?.sarcasmReasons || [],
         created_at: post.created_at,
         author: post.author,
         metrics: post.metrics
@@ -328,11 +446,15 @@ export const analyzeMultiplePlatforms = async (query, maxResults = 100, options 
     const samplePosts = ok.flatMap(r => (r.samplePosts || []).slice(0, 5));
     const platformBreakdown = ok.flatMap(r => r.platformBreakdown || []);
 
+    // ✅ Combine sarcasm stats
+    const sarcasmDetectedTotal = ok.reduce((s, r) => s + (r.sarcasm?.detected || 0), 0);
+    const sarcasmRatePercent = total > 0 ? Math.round((sarcasmDetectedTotal / total) * 100) : 0;
+
     const insights = {
       overall: `Overall ${overall} sentiment across ${total} posts indicates ${
         percentages.positive >= 60 ? 'strong positive reception'
-        : percentages.negative >= 60 ? 'strong negative reception'
-        : 'mixed public opinion'
+          : percentages.negative >= 60 ? 'strong negative reception'
+            : 'mixed public opinion'
       }`,
       platformComparison: ok.length >= 2
         ? ok.map(r => `${r.source}: ${r.percentages?.neutral ?? 0}% neutral`).join(' vs ')
@@ -349,6 +471,7 @@ export const analyzeMultiplePlatforms = async (query, maxResults = 100, options 
       percentages,
       sentiment_distribution: combined,
       total_analyzed: total,
+      sarcasm: { detected: sarcasmDetectedTotal, ratePercent: sarcasmRatePercent },
       insights,
       platformBreakdown,
       topKeywords,

@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import analysisRoutes from './sentimentAnalysis/routes/analysis.js';
 import chatRoutes from "./routes/chatRoutes.js"
+import reportRoutes from './reports/routes/reportRoutes.js';
 
 
 // Load env vars
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/analysis', analysisRoutes);  
+app.use('/api/reports', reportRoutes);
 
 
 // Health check route
