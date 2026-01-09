@@ -1,90 +1,213 @@
-import React from 'react';
-import { Button } from 'reactstrap';
+import React, { useState, useEffect } from 'react';
+import { Button, Spinner } from 'reactstrap';
 import { 
   Download, 
   Share2, 
   FolderPlus, 
   RefreshCw,
-  FileText
+  FileText,
+  Eye
 } from 'lucide-react';
+import { useApp } from '../../../api/context/AppContext';
+import reportService from '../../../api/services/reportService';
+import ReportModal from './ReportModal';
 
-export default function ActionBar({ query, onRefresh }) {
+export default function ActionBar({ query, results, onRefresh }) {
+  const { showSuccess, showError } = useApp();
   
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isCheckingReport, setIsCheckingReport] = useState(false);
+  const [report, setReport] = useState(null);
+  const [existingReport, setExistingReport] = useState(null);
+  const [error, setError] = useState(null);
+
+  const analysisId = results?.analysisId;
+
+  // Check if report already exists for this analysis
+  useEffect(() => {
+    const checkExistingReport = async () => {
+      if (!analysisId) return;
+
+      setIsCheckingReport(true);
+      try {
+        const response = await reportService.getReportByAnalysisId(analysisId);
+        if (response.success && response.data) {
+          setExistingReport(response.data);
+        } else {
+          setExistingReport(null);
+        }
+      } catch (err) {
+        console.error('Error checking existing report:', err);
+        setExistingReport(null);
+      } finally {
+        setIsCheckingReport(false);
+      }
+    };
+
+    checkExistingReport();
+  }, [analysisId]);
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+    if (isModalOpen) {
+      setError(null);
+    }
+  };
+
+  const handleViewReport = () => {
+    if (existingReport) {
+      setReport(existingReport);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!results) {
+      showError('No analysis data available');
+      return;
+    }
+
+    setIsModalOpen(true);
+    setIsGenerating(true);
+    setError(null);
+    setReport(null);
+
+    try {
+      const response = await reportService.generateReport(results);
+      
+      if (response.success) {
+        setReport(response.data);
+        setExistingReport(response.data);
+        showSuccess('Report generated successfully');
+      } else {
+        setError(response.message || 'Failed to generate report');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to generate report');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!report?.content) return;
+
+    const blob = new Blob([report.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sentiment-report-${query?.replace(/\s+/g, '-') || 'analysis'}-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showSuccess('Report downloaded');
+  };
+
   const handleExport = () => {
-    // Export functionality - can be implemented later
     console.log('Export analysis for:', query);
   };
 
   const handleShare = () => {
-    // Share functionality - can be implemented later
     console.log('Share analysis');
   };
 
   const handleSaveToProject = () => {
-    // Save to project functionality - can be implemented later
     console.log('Save to project');
   };
 
-  const handleGenerateReport = () => {
-    // Generate report functionality - can be implemented later
-    console.log('Generate report for:', query);
-  };
+  const hasExistingReport = !!existingReport;
 
   return (
-    <div className="action-bar d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
-      <Button
-        outline
-        color="secondary"
-        size="sm"
-        className="d-flex align-items-center gap-2"
-        onClick={onRefresh}
-      >
-        <RefreshCw size={14} />
-        <span>Refresh</span>
-      </Button>
+    <>
+      <div className="action-bar d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+        <Button
+          outline
+          color="secondary"
+          size="sm"
+          className="d-flex align-items-center gap-2"
+          onClick={onRefresh}
+        >
+          <RefreshCw size={14} />
+          <span>Refresh</span>
+        </Button>
 
-      <Button
-        outline
-        color="secondary"
-        size="sm"
-        className="d-flex align-items-center gap-2"
-        onClick={handleExport}
-      >
-        <Download size={14} />
-        <span>Export</span>
-      </Button>
+        <Button
+          outline
+          color="secondary"
+          size="sm"
+          className="d-flex align-items-center gap-2"
+          onClick={handleExport}
+        >
+          <Download size={14} />
+          <span>Export</span>
+        </Button>
 
-      <Button
-        outline
-        color="secondary"
-        size="sm"
-        className="d-flex align-items-center gap-2"
-        onClick={handleShare}
-      >
-        <Share2 size={14} />
-        <span>Share</span>
-      </Button>
+        <Button
+          outline
+          color="secondary"
+          size="sm"
+          className="d-flex align-items-center gap-2"
+          onClick={handleShare}
+        >
+          <Share2 size={14} />
+          <span>Share</span>
+        </Button>
 
-      <Button
-        outline
-        color="secondary"
-        size="sm"
-        className="d-flex align-items-center gap-2"
-        onClick={handleSaveToProject}
-      >
-        <FolderPlus size={14} />
-        <span>Save to Project</span>
-      </Button>
+        <Button
+          outline
+          color="secondary"
+          size="sm"
+          className="d-flex align-items-center gap-2"
+          onClick={handleSaveToProject}
+        >
+          <FolderPlus size={14} />
+          <span>Save to Project</span>
+        </Button>
 
-      <Button
-        color="primary"
-        size="sm"
-        className="d-flex align-items-center gap-2 ms-auto"
-        onClick={handleGenerateReport}
-      >
-        <FileText size={14} />
-        <span>Generate Report</span>
-      </Button>
-    </div>
+        {isCheckingReport ? (
+          <Button
+            color="primary"
+            size="sm"
+            className="d-flex align-items-center gap-2 ms-auto"
+            disabled
+          >
+            <Spinner size="sm" />
+            <span>Checking...</span>
+          </Button>
+        ) : hasExistingReport ? (
+          <Button
+            color="success"
+            size="sm"
+            className="d-flex align-items-center gap-2 ms-auto"
+            onClick={handleViewReport}
+          >
+            <Eye size={14} />
+            <span>View Report</span>
+          </Button>
+        ) : (
+          <Button
+            color="primary"
+            size="sm"
+            className="d-flex align-items-center gap-2 ms-auto"
+            onClick={handleGenerateReport}
+          >
+            <FileText size={14} />
+            <span>Generate Report</span>
+          </Button>
+        )}
+      </div>
+
+      <ReportModal
+        isOpen={isModalOpen}
+        toggle={toggleModal}
+        isGenerating={isGenerating}
+        report={report}
+        error={error}
+        onDownload={handleDownload}
+      />
+    </>
   );
 }

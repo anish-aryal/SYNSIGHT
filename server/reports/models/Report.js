@@ -1,0 +1,57 @@
+import mongoose from 'mongoose';
+
+const reportSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  analysis: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Analysis',
+    required: false
+  },
+  query: {
+    type: String,
+    required: true
+  },
+  content: {
+    type: String,
+    required: true
+  },
+  source: {
+    type: String,
+    enum: ['bluesky', 'twitter', 'reddit', 'multi-platform'],
+    default: 'multi-platform'
+  },
+  sentiment: {
+    overall: String,
+    positive: Number,
+    negative: Number,
+    neutral: Number
+  },
+  totalAnalyzed: {
+    type: Number,
+    default: 0
+  },
+  usage: {
+    prompt_tokens: Number,
+    completion_tokens: Number,
+    total_tokens: Number
+  },
+  status: {
+    type: String,
+    enum: ['generated', 'archived', 'deleted'],
+    default: 'generated'
+  }
+}, {
+  timestamps: true
+});
+
+// Index for faster queries
+reportSchema.index({ user: 1, createdAt: -1 });
+reportSchema.index({ user: 1, query: 1 });
+reportSchema.index({ user: 1, analysis: 1 }, { unique: true, sparse: true });
+
+
+export default mongoose.model('Report', reportSchema);
