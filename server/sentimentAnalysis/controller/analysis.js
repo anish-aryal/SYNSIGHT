@@ -94,7 +94,6 @@ export const analyzeTwitter = async (req, res) => {
       totalAnalyzed: result.total_analyzed,
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
-      timeAnalysis: result.timeAnalysis,
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
@@ -105,10 +104,12 @@ export const analyzeTwitter = async (req, res) => {
       ...result,
       analysisId: analysis._id,
       dateRange,
-      processingTime
+      processingTime,
+      timeframe: options.timeframe,
+      language: options.language,
+      maxResults: result?.maxResults ?? maxResults
     });
   } catch (error) {
-    // ✅ return clearer message for user-caused errors
     return sendErrorResponse(res, error.message || 'Failed to analyze Twitter data', 500);
   }
 };
@@ -140,7 +141,6 @@ export const analyzeReddit = async (req, res) => {
       totalAnalyzed: result.total_analyzed,
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
-      timeAnalysis: result.timeAnalysis,
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
@@ -151,7 +151,10 @@ export const analyzeReddit = async (req, res) => {
       ...result,
       analysisId: analysis._id,
       dateRange,
-      processingTime
+      processingTime,
+      timeframe: options.timeframe,
+      language: options.language,
+      maxResults: result?.maxResults ?? maxResults
     });
   } catch (error) {
     return sendErrorResponse(res, error.message || 'Failed to analyze Reddit data', 500);
@@ -185,7 +188,6 @@ export const analyzeBluesky = async (req, res) => {
       totalAnalyzed: result.total_analyzed,
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
-      timeAnalysis: result.timeAnalysis,
       topKeywords: result.topKeywords,
       samplePosts: result.samplePosts,
       dateRange,
@@ -196,7 +198,10 @@ export const analyzeBluesky = async (req, res) => {
       ...result,
       analysisId: analysis._id,
       dateRange,
-      processingTime
+      processingTime,
+      timeframe: options.timeframe,
+      language: options.language,
+      maxResults: result?.maxResults ?? maxResults
     });
   } catch (error) {
     // ✅ If creds missing, make it a clear client message
@@ -242,7 +247,10 @@ export const analyzeMultiPlatform = async (req, res) => {
       ...result,
       analysisId: analysis._id,
       dateRange,
-      processingTime
+      processingTime,
+      timeframe: options.timeframe,
+      language: options.language,
+      maxResults: result?.maxResults ?? maxResults
     });
   } catch (error) {
     return sendErrorResponse(res, error.message || 'Failed to analyze multi-platform data', 500);

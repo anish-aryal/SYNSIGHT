@@ -11,9 +11,9 @@ import {
 } from 'reactstrap';
 import { 
   Sparkles, 
-  ChevronDown, 
-  Plus, 
-  Share2,
+  ChevronDown,
+  FolderPlus,
+  Plus,
   Globe,
   Twitter,
   MessageSquareText,
@@ -40,57 +40,68 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
   const handlePlatformSelect = (platformId) => setSelectedPlatform(platformId);
 
   return (
-    <Container fluid className="chat-header py-2 px-3">
+    <Container fluid className="chat-header">
       <Row className="align-items-center">
-        <Col xs="auto">
-          <Dropdown isOpen={dropdownOpen} toggle={toggle}>
-            <DropdownToggle tag="div" className="model-selector">
-              <Sparkles size={18} className="text-primary" />
-              <span className="model-name">SentimentAI</span>
-              <span className="platform-badge">{currentPlatform.name}</span>
-              <ChevronDown
-                size={16}
-                className={`text-muted dropdown-chevron ${dropdownOpen ? 'rotated' : ''}`}
-              />
-            </DropdownToggle>
-
-            <DropdownMenu className="platform-dropdown-menu">
-              <div className="dropdown-header-text">Select Platform</div>
-
-              {platforms.map((platform) => {
-                const IconComponent = platform.icon;
-                const isSelected = currentPlatform.id === platform.id;
-
-                return (
-                  <DropdownItem
-                    key={platform.id}
-                    onClick={() => handlePlatformSelect(platform.id)}
-                    className={`platform-dropdown-item ${isSelected ? 'selected' : ''}`}
-                  >
-                    <div className="d-flex align-items-center gap-3">
-                      <div className={`platform-icon-wrapper ${platform.color}`}>
-                        <IconComponent size={18} />
-                      </div>
-                      <div className="platform-info">
-                        <div className="platform-name">{platform.name}</div>
-                        <div className="platform-description">{platform.description}</div>
-                      </div>
-                      {isSelected && (
-                        <div className="ms-auto">
-                          <Check size={16} className="text-primary" />
-                        </div>
-                      )}
-                    </div>
-                  </DropdownItem>
-                );
-              })}
-
-              <DropdownItem divider />
-              <div className="dropdown-footer-text">
-                <small className="text-muted">More platforms coming soon</small>
+        <Col>
+          <div className="chat-header-left">
+            <div className="chat-title">
+              <div className="chat-title-icon gradient-primary">
+                <Sparkles size={18} color="white" />
               </div>
-            </DropdownMenu>
-          </Dropdown>
+              <div className="chat-title-text">
+                <div className="chat-title-name">Sentiment Analysis Chat</div>
+                <div className="chat-title-subtitle">Ask anything about social media sentiment</div>
+              </div>
+            </div>
+
+            <Dropdown isOpen={dropdownOpen} toggle={toggle}>
+              <DropdownToggle tag="button" type="button" className="chat-platform-toggle">
+                <Globe size={14} />
+                <span className="chat-platform-label">{currentPlatform.name}</span>
+                <ChevronDown
+                  size={14}
+                  className={`dropdown-chevron ${dropdownOpen ? 'rotated' : ''}`}
+                />
+              </DropdownToggle>
+
+              <DropdownMenu className="platform-dropdown-menu">
+                <div className="dropdown-header-text">Select Platform</div>
+
+                {platforms.map((platform) => {
+                  const IconComponent = platform.icon;
+                  const isSelected = currentPlatform.id === platform.id;
+
+                  return (
+                    <DropdownItem
+                      key={platform.id}
+                      onClick={() => handlePlatformSelect(platform.id)}
+                      className={`platform-dropdown-item ${isSelected ? 'selected' : ''}`}
+                    >
+                      <div className="d-flex align-items-center gap-3">
+                        <div className={`platform-icon-wrapper ${platform.color}`}>
+                          <IconComponent size={18} />
+                        </div>
+                        <div className="platform-info">
+                          <div className="platform-name">{platform.name}</div>
+                          <div className="platform-description">{platform.description}</div>
+                        </div>
+                        {isSelected && (
+                          <div className="ms-auto">
+                            <Check size={16} className="text-primary" />
+                          </div>
+                        )}
+                      </div>
+                    </DropdownItem>
+                  );
+                })}
+
+                <DropdownItem divider />
+                <div className="dropdown-footer-text">
+                  <small className="text-muted">More platforms coming soon</small>
+                </div>
+              </DropdownMenu>
+            </Dropdown>
+          </div>
         </Col>
 
         <Col className="text-end">
@@ -100,18 +111,19 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
                 <Button
                   color="link"
                   size="sm"
-                  className="d-flex align-items-center gap-1 text-secondary text-decoration-none"
+                  className="chat-header-action chat-save-btn gradient-primary text-white"
                   onClick={onSaveProject}
+                  disabled={!onSaveProject}
                 >
-                  <Share2 size={16} />
-                  <span className="d-none d-sm-inline">Share</span>
+                  <FolderPlus size={16} />
+                  <span>Save as Project</span>
                 </Button>
 
                 <Button
                   outline
                   color="dark"
                   size="sm"
-                  className="d-flex align-items-center gap-1 rounded-3"
+                  className="chat-header-action chat-new-btn"
                   onClick={onNewChat}
                 >
                   <Plus size={16} />

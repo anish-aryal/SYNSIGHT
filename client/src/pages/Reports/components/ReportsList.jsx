@@ -1,16 +1,68 @@
 import React from 'react';
-import { Card, CardBody, Button, InputGroup, Input } from 'reactstrap';
-import { Calendar, Eye, Download, Search } from 'lucide-react';
+import { Card, CardBody, Button, InputGroup, Input, Spinner } from 'reactstrap';
+import { Calendar, Eye, Download, Search, Trash2 } from 'lucide-react';
 
-export default function ReportsList({ reports, searchQuery, setSearchQuery }) {
+export default function ReportsList({
+  reports,
+  searchQuery,
+  setSearchQuery,
+  onViewReport,
+  onDownloadReport,
+  onDeleteReport,
+  viewingReportId,
+  downloadingReportId,
+  deletingReportId
+}) {
+  const getDominantSentiment = (report) => {
+    const overall = (report?.sentiment?.overall || '').toLowerCase();
+    if (overall) return overall;
+
+    const positive = Number(report?.sentiment?.positive ?? 0);
+    const negative = Number(report?.sentiment?.negative ?? 0);
+    const neutral = Number(report?.sentiment?.neutral ?? 0);
+    const hasValues = positive > 0 || negative > 0 || neutral > 0;
+    if (!hasValues) return null;
+
+    if (positive >= negative && positive >= neutral) return 'positive';
+    if (negative >= positive && negative >= neutral) return 'negative';
+    return 'neutral';
+  };
+
   const getSentimentColor = (sentiment) => {
-    if (sentiment >= 60) {
-      return '#10b981'; // Green for positive
-    } else if (sentiment >= 40) {
-      return '#D08700'; // Brown for neutral
-    } else {
-      return '#ef4444'; // Red for negative
-    }
+    if (sentiment === 'positive') return '#10b981';
+    if (sentiment === 'neutral') return '#D08700';
+    if (sentiment === 'negative') return '#ef4444';
+    return '#6b7280';
+  };
+
+  const getSentimentPercent = (report, sentiment) => {
+    if (!sentiment) return null;
+    const sentimentMap = {
+      positive: report?.sentiment?.positive,
+      neutral: report?.sentiment?.neutral,
+      negative: report?.sentiment?.negative
+    };
+
+    const value = Number(sentimentMap[sentiment]);
+    if (!Number.isFinite(value)) return null;
+    return Math.round(value);
+  };
+
+  const formatSentimentLabel = (sentiment) => {
+    if (!sentiment) return 'Unknown';
+    return sentiment[0].toUpperCase() + sentiment.slice(1);
+  };
+
+  const formatDate = (value) => {
+    if (!value) return 'Unknown date';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return 'Unknown date';
+
+    return parsed.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -39,27 +91,34 @@ export default function ReportsList({ reports, searchQuery, setSearchQuery }) {
 
         <div className="d-flex flex-column gap-3">
           {reports.length > 0 ? (
-            reports.map((report) => {
-              const sentimentColor = getSentimentColor(report.avgSentiment);
+            reports.map((report, index) => {
+              const reportId = report?._id || report?.id;
+              const reportKey = reportId || report?.query || report?.title || report?.createdAt || index;
+              const dominantSentiment = getDominantSentiment(report);
+              const sentimentColor = getSentimentColor(dominantSentiment);
+              const sentimentPercent = getSentimentPercent(report, dominantSentiment);
+              const isViewing = viewingReportId === reportId;
+              const isDownloading = downloadingReportId === reportId;
+              const isDeleting = deletingReportId === reportId;
               
               return (
-                <div 
-                  key={report.id} 
-                  className="d-flex justify-content-between align-items-center p-3 border rounded-2 bg-white"
+                <div
+                  key={reportKey}
+                  className={`d-flex justify-content-between align-items-center p-3 border rounded-2 bg-white ${isDeleting ? 'report-item-deleting' : ''}`}
                   style={{ transition: 'all 0.2s ease' }}
                 >
                   <div className="flex-grow-1">
-                    <h6 className="mb-2 fw-medium">{report.title}</h6>
+                    <h6 className="mb-2 fw-medium">{report?.query || report?.title || 'Untitled report'}</h6>
                     <div className="d-flex align-items-center gap-1 text-muted" style={{ fontSize: '13px' }}>
                       <Calendar size={14} />
-                      <span>{report.date}</span>
+                      <span>{formatDate(report?.createdAt || report?.date)}</span>
                     </div>
                   </div>
 
                   <div className="d-flex align-items-center gap-3">
                     <div className="text-end">
                       <p className="text-muted mb-0 fs-6" >
-                        Avg Sentiment
+                        Sentiment
                       </p>
                       <p 
                         className="fw-normal mb-0 fs-5" 
@@ -67,23 +126,38 @@ export default function ReportsList({ reports, searchQuery, setSearchQuery }) {
                           color: sentimentColor
                         }}
                       >
-                        {report.avgSentiment}%
+                        {sentimentPercent !== null ? `${sentimentPercent}%` : 'N/A'}
+                      </p>
+                      <p className="text-muted mb-0" style={{ fontSize: '12px' }}>
+                        {formatSentimentLabel(dominantSentiment)}
                       </p>
                     </div>
 
                     <div className="d-flex gap-2">
-                      <Button 
-                        color="light" 
+                      <Button
+                        color="light"
                         className="border-1 d-flex align-items-center gap-2 px-3"
+                        onClick={() => onViewReport?.(report)}
+                        disabled={!reportId || isViewing || isDownloading || isDeleting}
                       >
-                        <Eye size={16} />
-                        <span>View</span>
+                        {isViewing ? <Spinner size="sm" /> : <Eye size={16} />}
+                        <span>{isViewing ? 'Loading' : 'View'}</span>
                       </Button>
-                      <Button 
-                        color="light" 
+                      <Button
+                        color="light"
                         className="border-1 px-3"
+                        onClick={() => onDownloadReport?.(report)}
+                        disabled={!reportId || isDownloading || isViewing || isDeleting}
                       >
-                        <Download size={16} />
+                        {isDownloading ? <Spinner size="sm" /> : <Download size={16} />}
+                      </Button>
+                      <Button
+                        color="light"
+                        className="border-1 px-3"
+                        onClick={() => onDeleteReport?.(report)}
+                        disabled={!reportId || isDeleting || isViewing || isDownloading}
+                      >
+                        {isDeleting ? <Spinner size="sm" /> : <Trash2 size={16} />}
                       </Button>
                     </div>
                   </div>

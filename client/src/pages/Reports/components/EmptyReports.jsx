@@ -19,16 +19,16 @@ export default function EmptyReports() {
         <Download size={40} style={{ color: '#6366f1' }} />
       </div>
       
-      <h4 className="fw-semibold mb-2">No Report Selected</h4>
+      <h4 className="fw-semibold mb-2">No reports yet</h4>
       <p className="text-muted mb-4" style={{ fontSize: '14px' }}>
-        Start a chat or run a search to generate a report
+        Start a chat or run a search to generate your first report
       </p>
       
       <Button 
         className="gradient-primary border-0 px-4 py-2 fw-medium"
         onClick={() => navigate('/chat')}
       >
-        Go to Chat
+        Generate Report
       </Button>
     </div>
   );

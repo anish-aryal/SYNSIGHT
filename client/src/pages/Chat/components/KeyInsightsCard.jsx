@@ -1,5 +1,4 @@
 import React from 'react';
-import { Row, Col, Card, CardBody } from 'reactstrap';
 import { Lightbulb } from 'lucide-react';
 
 export default function KeyInsightsCard({ insights }) {
@@ -24,29 +23,21 @@ export default function KeyInsightsCard({ insights }) {
   if (insightsList.length === 0) return null;
 
   return (
-    <Card className="insights-card border-0">
-      <CardBody className="p-0">
-        <Row>
-          <Col xs={12}>
-            <div className="insights-header">
-              <Lightbulb size={18} color="white" />
-              <h6 className="insights-title">Key Insights</h6>
-            </div>
-          </Col>
-        </Row>
-        <Row>
-          <Col xs={12}>
-            <div className="insights-list">
-              {insightsList.map((insight, index) => (
-                <div key={index} className="insight-item">
-                  <span className="insight-bullet">•</span>
-                  <span className="insight-text">{insight}</span>
-                </div>
-              ))}
-            </div>
-          </Col>
-        </Row>
-      </CardBody>
-    </Card>
+    <div className="insights-card">
+      <div className="insights-header">
+        <span className="insights-icon gradient-primary">
+          <Lightbulb size={16} color="white" />
+        </span>
+        <h6 className="insights-title">Key Insights</h6>
+      </div>
+      <div className="insights-list">
+        {insightsList.map((insight, index) => (
+          <div key={index} className="insight-item">
+            <span className="insight-bullet">•</span>
+            <span className="insight-text">{insight}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

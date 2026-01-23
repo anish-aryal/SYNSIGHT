@@ -1,7 +1,11 @@
 export const generateInsights = (data, query) => {
   const insights = {};
-  const total = data.total_analyzed || 0;
-  const dist = data.sentiment_distribution || { positive: 0, negative: 0, neutral: 0 };
+  const total = data?.total_analyzed ?? data?.totalAnalyzed ?? 0;
+  const dist = data?.sentiment_distribution ?? data?.sentimentDistribution ?? data?.sentiment?.distribution ?? {
+    positive: 0,
+    negative: 0,
+    neutral: 0
+  };
 
   if (total > 0) {
     const positivePercent = Math.round((dist.positive / total) * 100);
@@ -17,18 +21,7 @@ export const generateInsights = (data, query) => {
     insights.overall = 'Not enough data to determine overall sentiment';
   }
 
-  const ta = data.timeAnalysis || [];
-  if (ta.length > 0) {
-    let peak = ta[0];
-    for (let i = 1; i < ta.length; i++) {
-      if (ta[i].volume > peak.volume) peak = ta[i];
-    }
-    const timeLabel = peak.hour < 12 ? 'AM' : 'PM';
-    const displayHour = peak.hour % 12 || 12;
-    insights.peakEngagement = `Peak engagement observed at ${displayHour} ${timeLabel}`;
-  }
-
-  const kws = data.topKeywords || [];
+  const kws = data?.topKeywords ?? data?.top_keywords ?? [];
   if (kws.length > 0) {
     const positives = [];
     const negatives = [];

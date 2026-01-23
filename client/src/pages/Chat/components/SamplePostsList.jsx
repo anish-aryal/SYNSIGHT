@@ -1,9 +1,10 @@
-import React from 'react';
-import { Row, Col, Card, CardBody, Badge } from 'reactstrap';
+import React, { useState } from 'react';
+import { Row, Col, Card, CardBody } from 'reactstrap';
 import { CheckCircle, XCircle, MinusCircle } from 'lucide-react';
 
 export default function SamplePostsList({ posts }) {
   if (!posts || posts.length === 0) return null;
+  const [expandedPosts, setExpandedPosts] = useState(() => new Set());
 
   const getIcon = (sentiment) => {
     switch (sentiment?.toLowerCase()) {
@@ -16,10 +17,23 @@ export default function SamplePostsList({ posts }) {
     }
   };
 
-  const truncateText = (text, maxLength = 80) => {
+  const maxLength = 120;
+  const truncateText = (text, length = maxLength) => {
     if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+    if (text.length <= length) return text;
+    return text.substring(0, length) + '...';
+  };
+
+  const togglePost = (index) => {
+    setExpandedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
   };
 
   return (
@@ -29,23 +43,47 @@ export default function SamplePostsList({ posts }) {
         <div className="section-body">
           <Row>
             <Col xs={12}>
-              {posts.slice(0, 5).map((post, index) => (
-                <div key={index} className="sample-post-item">
-                  <div className={`post-icon ${post.sentiment?.toLowerCase()}`}>
-                    {getIcon(post.sentiment)}
-                  </div>
-                  <div className="post-content">
-                    <p className="post-text">{truncateText(post.text)}</p>
-                    <div className="post-meta">
-                      <Badge className={`post-sentiment-badge ${post.sentiment?.toLowerCase()}`}>
-                        {post.sentiment}
-                      </Badge>
-                      <span className="post-platform">{post.platform}</span>
+              {posts.slice(0, 5).map((post, index) => {
+                const sentimentClass = post.sentiment?.toLowerCase() || 'neutral';
+                const sentimentLabel = post.sentiment || 'Neutral';
+                const text = post.text || '';
+                const isLong = text.length > maxLength;
+                const isExpanded = expandedPosts.has(index);
+
+                return (
+                  <div key={index} className="sample-post-item">
+                    <div className={`post-icon ${sentimentClass}`}>
+                      {getIcon(sentimentClass)}
                     </div>
+                    <div className="post-content">
+                      <div className="post-text-row">
+                        <p className="post-text">
+                          {isExpanded ? text : truncateText(text)}
+                        </p>
+                        {isLong && (
+                          <button
+                            type="button"
+                            className="post-toggle"
+                            onClick={() => togglePost(index)}
+                            aria-expanded={isExpanded}
+                          >
+                            {isExpanded ? 'Show less' : 'Read more'}
+                          </button>
+                        )}
+                      </div>
+                      <div className="post-meta">
+                        <span className={`pill pill-${sentimentClass} pill-sm post-sentiment-pill`}>
+                          {sentimentLabel}
+                        </span>
+                        <span className="post-platform">{post.platform}</span>
+                      </div>
+                    </div>
+                    {typeof post.confidence === 'number' && (
+                      <span className="post-confidence">{post.confidence}%</span>
+                    )}
                   </div>
-                  <span className="post-confidence">{post.confidence}%</span>
-                </div>
-              ))}
+                );
+              })}
             </Col>
           </Row>
         </div>

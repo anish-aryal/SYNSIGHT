@@ -18,14 +18,14 @@ export const ChatProvider = ({ children }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // ✅ used by ChatHeader
+  // Platform selection for analysis (used by ChatHeader)
   const [selectedPlatform, setSelectedPlatform] = useState('all');
 
-  // ✅ only UI supported
+  // Analysis configuration options
   const [analysisOptions, setAnalysisOptions] = useState({
     timeframe: 'last7days',
     language: 'en',
-    platforms: { twitter: true, reddit: true, bluesky: true } // only used when selectedPlatform === 'all'
+    platforms: { twitter: true, reddit: true, bluesky: true }
   });
 
   const analysisSteps = [
@@ -91,6 +91,27 @@ export const ChatProvider = ({ children }) => {
       showError(e.message || 'Failed to load chat');
     }
   }, [showError]);
+
+  const deleteChat = useCallback(async (chatId) => {
+    try {
+      const res = await chatService.deleteChat(chatId);
+      if (res?.success) {
+        // Remove from chats list
+        setChats((prev) => prev.filter((chat) => chat._id !== chatId));
+
+        // If this is the current chat, start a new one
+        if (currentChatRef.current === chatId) {
+          startNewChat();
+        }
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      showError(e.message || 'Failed to delete chat');
+      return false;
+    }
+  }, [showError, startNewChat]);
 
   const sendMessage = useCallback(async (query) => {
     const trimmed = (query || '').trim();
@@ -198,7 +219,8 @@ export const ChatProvider = ({ children }) => {
         fetchChats,
         startNewChat,
         loadChat,
-        sendMessage
+        sendMessage,
+        deleteChat
       }}
     >
       {children}

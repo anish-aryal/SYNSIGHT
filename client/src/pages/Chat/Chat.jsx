@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Badge, Spinner } from 'reactstrap';
 import ChatHeader from './components/ChatHeader';
 import ChatInput from './components/ChatInput';
@@ -9,11 +9,13 @@ import AnalysisResults from './components/AnalysisResults';
 import SkeletonLoader from './components/SkeletonLoader';
 import { Sparkles } from 'lucide-react';
 import { useChat } from '../../api/context/ChatContext';
+import { useApp } from '../../api/context/AppContext';
 import './Chat.css';
 
 export default function Chat() {
   const { chatId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const {
     currentChat,
@@ -26,10 +28,12 @@ export default function Chat() {
     startNewChat,
     fetchChats
   } = useChat();
+  const { showInfo } = useApp();
 
   const messagesEndRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const hasLoadedChat = useRef(false);
+  const hasAutoAnalyzed = useRef(false);
 
   const suggestions = [
     'Analyze sentiment for Tesla',
@@ -65,6 +69,24 @@ export default function Chat() {
     fetchChats();
   }, [fetchChats]);
 
+  // Handle auto-analyze from Explore page
+  useEffect(() => {
+    if (location.state?.autoAnalyze && location.state?.query && !hasAutoAnalyzed.current) {
+      hasAutoAnalyzed.current = true;
+      const query = location.state.query;
+
+      // Ensure auto-analyze from Explore always starts a fresh chat
+      startNewChat();
+      hasLoadedChat.current = false;
+
+      // Clear the state from navigation
+      navigate(location.pathname, { replace: true, state: {} });
+
+      // Trigger analysis
+      handleSend(query);
+    }
+  }, [location.state]);
+
   // Handle sending message
   const handleSend = async (query) => {
     if (!query.trim()) return;
@@ -91,11 +113,15 @@ export default function Chat() {
     navigate('/chat');
   };
 
+  const handleSaveProject = () => {
+    showInfo('Save to project is coming soon.');
+  };
+
   // Initial State - Welcome Screen
   if (isInitialState) {
     return (
       <div className="chat-wrapper">
-        <ChatHeader onNewChat={handleNewChat} isInitial />
+        <ChatHeader onNewChat={handleNewChat} onSaveProject={handleSaveProject} isInitial />
 
         <div className="chat-main-area">
           <Container>
@@ -130,12 +156,20 @@ export default function Chat() {
           </Container>
         </div>
 
-        <ChatInput
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onSend={handleSend}
-          disabled={isAnalyzing}
-        />
+        <div className="chat-input-area">
+          <Container fluid className="chat-shell">
+            <Row className="justify-content-center g-0">
+              <Col xs={12} lg={11} xl={10} xxl={9} className="chat-thread">
+                <ChatInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onSend={handleSend}
+                  disabled={isAnalyzing}
+                />
+              </Col>
+            </Row>
+          </Container>
+        </div>
       </div>
     );
   }
@@ -143,48 +177,62 @@ export default function Chat() {
   // Chat State - Messages
   return (
     <div className="chat-wrapper">
-      <ChatHeader onNewChat={handleNewChat} />
+      <ChatHeader onNewChat={handleNewChat} onSaveProject={handleSaveProject} />
 
       <div className="chat-messages-area">
-        {messages.map((message) => (
-          <MessageBubble key={message._id || message.id} message={message}>
-            {message.type === 'ai' && (
-              <AnalysisResults results={message.content} query={message.query} />
-            )}
-          </MessageBubble>
-        ))}
+        <Container fluid className="chat-shell">
+          <Row className="justify-content-center">
+            <Col xs={12} lg={11} xl={10} xxl={9} className="chat-thread">
+              {messages.map((message) => (
+                <MessageBubble key={message._id || message.id} message={message}>
+                  {message.type === 'ai' && (
+                    <AnalysisResults results={message.content} query={message.query} />
+                  )}
+                </MessageBubble>
+              ))}
 
-        {isAnalyzing && (
-          <div className="message-row ai">
-            <Container>
-              <Row className="justify-content-center">
-                <Col xs={12} lg={10} xl={8}>
-                  <div className="d-flex align-items-start gap-3">
-                    <div className="message-avatar gradient-primary">
-                      <Sparkles size={16} color="white" />
-                    </div>
-                    <div className="flex-grow-1">
-                      <div className="d-flex align-items-center gap-2 mb-3">
-                        <span className="message-name">SentimentAI</span>
-                        <Badge color="light" pill className="analyzing-badge">
-                          <Spinner size="sm" className="me-1" />
-                          Analyzing
-                        </Badge>
+              {isAnalyzing && (
+                <div className="message-row ai">
+                  <div className="message-row-inner ai">
+                    <div className="message-col ai">
+                      <div className="d-flex align-items-start gap-3">
+                        <div className="flex-grow-1">
+                          <div className="message-bubble message-bubble-ai">
+                            <div className="message-bubble-header">
+                              <span className="message-avatar gradient-primary message-avatar-inline">
+                                <Sparkles size={14} color="white" />
+                              </span>
+                              <span className="message-name">SentimentAI</span>
+                              <Badge color="light" pill className="analyzing-badge message-bubble-meta">
+                                <Spinner size="sm" className="me-1" />
+                                Analyzing
+                              </Badge>
+                            </div>
+                            <AnalysisSteps steps={analysisSteps} currentStep={currentStep} />
+                            <SkeletonLoader />
+                          </div>
+                        </div>
                       </div>
-                      <AnalysisSteps steps={analysisSteps} currentStep={currentStep} />
-                      <SkeletonLoader />
                     </div>
                   </div>
-                </Col>
-              </Row>
-            </Container>
-          </div>
-        )}
+                </div>
+              )}
 
-        <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} />
+            </Col>
+          </Row>
+        </Container>
       </div>
 
-      <ChatInput onSend={handleSend} disabled={isAnalyzing} />
+      <div className="chat-input-area">
+        <Container fluid className="chat-shell">
+          <Row className="justify-content-center g-0">
+            <Col xs={12} lg={11} xl={10} xxl={9} className="chat-thread">
+              <ChatInput onSend={handleSend} disabled={isAnalyzing} />
+            </Col>
+          </Row>
+        </Container>
+      </div>
     </div>
   );
 }

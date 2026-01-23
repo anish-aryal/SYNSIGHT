@@ -20,7 +20,7 @@ export const addMessage = async (chatId, messageData) => {
   return response.data;
 };
 
-// ✅ alias (some components may call sendMessage)
+// Alias for addMessage to maintain compatibility
 export const sendMessage = async (chatId, messageData) => addMessage(chatId, messageData);
 
 export const updateChat = async (chatId, data) => {

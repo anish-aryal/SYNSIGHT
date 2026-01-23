@@ -30,7 +30,6 @@ const analysisSchema = new mongoose.Schema(
       sentimentDistribution: { positive: Number, negative: Number, neutral: Number }
     }],
 
-    timeAnalysis: [{ hour: Number, volume: Number }],
 
     topKeywords: [{ keyword: String, count: Number, sentiment: String }],
 

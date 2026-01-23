@@ -5,7 +5,6 @@ import * as blueskyService from './bluesky.js';
 
 import { filterPosts } from '../utils/contentFilter.js';
 import { extractKeywords } from '../utils/keywordExtractor.js';
-import { analyzeTimeDistribution } from '../utils/timeAnalyzer.js';
 import { generateInsights } from '../utils/InsightsGenerator.js';
 
 import { adjustForSarcasm } from '../utils/sarcasmDetector.js';
@@ -45,6 +44,159 @@ const calcPercentages = (dist, total) => ({
   negative: total > 0 ? Math.round((dist.negative / total) * 100) : 0,
   neutral: total > 0 ? Math.round((dist.neutral / total) * 100) : 0
 });
+
+const getTimeframeDays = (timeframe) => {
+  const ms = TIMEFRAME_MS[timeframe];
+  if (!ms) return null;
+  return Math.max(1, Math.round(ms / (24 * 60 * 60 * 1000)));
+};
+
+const toDayKey = (dateValue) => {
+  const t = toMs(dateValue);
+  if (t === null) return null;
+  const d = new Date(t);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+};
+
+const normalizeUtcDay = (dateValue) => {
+  const t = toMs(dateValue);
+  if (t === null) return null;
+  const d = new Date(t);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+};
+
+const toHourKey = (dateValue) => {
+  const t = toMs(dateValue);
+  if (t === null) return null;
+  const d = new Date(t);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}T${String(d.getUTCHours()).padStart(2, '0')}`;
+};
+
+const balancePostsByDay = (posts, getDate) => {
+  if (!Array.isArray(posts) || posts.length === 0) return { posts, counts: null };
+
+  const buckets = new Map();
+  for (const post of posts) {
+    const key = toDayKey(getDate(post));
+    if (!key) continue;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(post);
+  }
+
+  const dayKeys = Array.from(buckets.keys()).sort();
+  if (dayKeys.length <= 1) return { posts, counts: null };
+
+  for (const key of dayKeys) {
+    buckets.get(key).sort((a, b) => {
+      const ta = toMs(getDate(a)) ?? 0;
+      const tb = toMs(getDate(b)) ?? 0;
+      return ta - tb;
+    });
+  }
+
+  const targetPerDay = Math.ceil(posts.length / dayKeys.length);
+  const balanced = [];
+
+  for (const key of dayKeys) {
+    const bucket = buckets.get(key) || [];
+    if (bucket.length === 0) continue;
+    balanced.push(...bucket.slice(0, targetPerDay));
+  }
+
+  return {
+    posts: balanced,
+    counts: {
+      afterBalancing: balanced.length,
+      removedByBalancing: posts.length - balanced.length
+    }
+  };
+};
+
+const fillSentimentRange = (map, timeframe, referenceDate) => {
+  const days = getTimeframeDays(timeframe);
+  if (!days) return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+  const end = normalizeUtcDay(referenceDate || new Date());
+  if (!end) return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+
+  const out = [];
+  for (let d = new Date(start); d <= end; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1))) {
+    const key = toDayKey(d);
+    if (map.has(key)) out.push(map.get(key));
+    else out.push({ date: key, positive: 0, neutral: 0, negative: 0, total: 0 });
+  }
+
+  return out;
+};
+
+const fillSentimentRangeHourly = (map, referenceDate) => {
+  const endHour = new Date(referenceDate || new Date());
+  const endUtc = new Date(Date.UTC(endHour.getUTCFullYear(), endHour.getUTCMonth(), endHour.getUTCDate(), endHour.getUTCHours()));
+  const startUtc = new Date(endUtc);
+  startUtc.setUTCHours(startUtc.getUTCHours() - 23);
+
+  const out = [];
+  for (let d = new Date(startUtc); d <= endUtc; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours() + 1))) {
+    const key = toHourKey(d);
+    if (map.has(key)) out.push(map.get(key));
+    else out.push({ date: key, positive: 0, neutral: 0, negative: 0, total: 0 });
+  }
+
+  return out;
+};
+
+const buildSentimentOverTime = (posts, results, getDate, timeframe, referenceDate) => {
+  if (!Array.isArray(posts) || posts.length === 0) return [];
+
+  const map = new Map();
+
+  for (let i = 0; i < posts.length; i++) {
+    const key = timeframe === 'last24hours'
+      ? toHourKey(getDate(posts[i]))
+      : toDayKey(getDate(posts[i]));
+    if (!key) continue;
+    if (!map.has(key)) {
+      map.set(key, { date: key, positive: 0, neutral: 0, negative: 0, total: 0 });
+    }
+    const entry = map.get(key);
+    const sentiment = (results?.[i]?.sentiment || 'neutral').toLowerCase();
+    if (sentiment === 'positive') entry.positive += 1;
+    else if (sentiment === 'negative') entry.negative += 1;
+    else entry.neutral += 1;
+    entry.total += 1;
+  }
+
+  if (map.size === 0) return [];
+
+  return timeframe === 'last24hours'
+    ? fillSentimentRangeHourly(map, referenceDate)
+    : fillSentimentRange(map, timeframe, referenceDate);
+};
+
+const mergeSentimentOverTime = (results = [], timeframe, referenceDate) => {
+  const map = new Map();
+  for (const r of results) {
+    const series = Array.isArray(r?.sentimentOverTime) ? r.sentimentOverTime : [];
+    for (const day of series) {
+      if (!day?.date) continue;
+      if (!map.has(day.date)) {
+        map.set(day.date, { date: day.date, positive: 0, neutral: 0, negative: 0, total: 0 });
+      }
+      const entry = map.get(day.date);
+      entry.positive += day.positive || 0;
+      entry.neutral += day.neutral || 0;
+      entry.negative += day.negative || 0;
+      entry.total += day.total || 0;
+    }
+  }
+
+  return timeframe === 'last24hours'
+    ? fillSentimentRangeHourly(map, referenceDate)
+    : fillSentimentRange(map, timeframe, referenceDate);
+};
 
 // Normalize score shapes so adjustForSarcasm can work regardless of python field naming
 const normalizeScores = (r) => {
@@ -163,11 +315,6 @@ const analyzePlatformCore = async ({
         platformsAnalyzed: platform
       },
       topKeywords: [],
-      timeAnalysis: {
-        byHour: {},
-        byDay: {},
-        peakPeriod: null
-      },
       samplePosts: [],
       sarcasm: { detected: 0, ratePercent: 0 },
       platformBreakdown: [{
@@ -207,11 +354,6 @@ const analyzePlatformCore = async ({
         platformsAnalyzed: platform
       },
       topKeywords: [],
-      timeAnalysis: {
-        byHour: {},
-        byDay: {},
-        peakPeriod: null
-      },
       samplePosts: [],
       sarcasm: { detected: 0, ratePercent: 0 },
       platformBreakdown: [{
@@ -222,17 +364,21 @@ const analyzePlatformCore = async ({
     };
   }
 
-  const texts = new Array(filtered.length);
-  for (let i = 0; i < filtered.length; i++) texts[i] = getText(filtered[i]);
+  const shouldBalance = platform === 'bluesky' && timeframe !== 'last24hours';
+  const balancing = shouldBalance ? balancePostsByDay(filtered, getDate) : { posts: filtered, counts: null };
+  const postsForAnalysis = balancing.posts || filtered;
+
+  const texts = new Array(postsForAnalysis.length);
+  for (let i = 0; i < postsForAnalysis.length; i++) texts[i] = getText(postsForAnalysis[i]);
 
   const analysis = await VaderService.analyzeBulkTexts(texts);
 
   const individual = Array.isArray(analysis.individual_results) ? analysis.individual_results : [];
-  const total = analysis.total_analyzed || filtered.length || 0;
+  const total = analysis.total_analyzed || postsForAnalysis.length || 0;
 
   // ✅ Apply sarcasm adjustment per post (aligned by index)
-  const enrichedResults = new Array(filtered.length);
-  for (let i = 0; i < filtered.length; i++) {
+  const enrichedResults = new Array(postsForAnalysis.length);
+  for (let i = 0; i < postsForAnalysis.length; i++) {
     const r = individual[i] || {};
     const baseSentiment = r?.sentiment ?? 'neutral';
     const baseScores = normalizeScores(r);
@@ -267,9 +413,16 @@ const analyzePlatformCore = async ({
   const sarcasmRatePercent = total > 0 ? Math.round((sarcasmDetectedCount / total) * 100) : 0;
 
   const topKeywords = extractKeywords(texts, enrichedResults);
-  const timeAnalysis = analyzeTimeDistribution(filtered);
 
-  const samplePosts = filtered.slice(0, 10).map((item, idx) =>
+  const sentimentOverTime = buildSentimentOverTime(
+    postsForAnalysis,
+    enrichedResults,
+    getDate,
+    timeframe,
+    new Date().toISOString()
+  );
+
+  const samplePosts = postsForAnalysis.slice(0, 10).map((item, idx) =>
     sampleMapper(item, enrichedResults[idx], platform)
   );
 
@@ -278,8 +431,9 @@ const analyzePlatformCore = async ({
       sentiment_distribution: dist,
       total_analyzed: total,
       topKeywords,
-      timeAnalysis,
-      sarcasm: { detected: sarcasmDetectedCount, ratePercent: sarcasmRatePercent }
+      sarcasm: { detected: sarcasmDetectedCount, ratePercent: sarcasmRatePercent },
+      timeframe,
+      referenceDate: new Date().toISOString()
     },
     query
   );
@@ -300,13 +454,14 @@ const analyzePlatformCore = async ({
       afterTimeframe: timeFiltered.length,
       afterFilters: filtered.length,
       removedByTimeframe: raw.length - timeFiltered.length,
-      removedByFilters: timeFiltered.length - filtered.length
+      removedByFilters: timeFiltered.length - filtered.length,
+      ...(balancing.counts ? balancing.counts : {})
     },
 
     sarcasm: { detected: sarcasmDetectedCount, ratePercent: sarcasmRatePercent },
     insights,
     topKeywords,
-    timeAnalysis,
+    sentimentOverTime,
     samplePosts,
     platformBreakdown: [{
       platform: platform[0].toUpperCase() + platform.slice(1),
@@ -372,12 +527,16 @@ export const analyzeReddit = async (query, maxResults = 100, options = {}) => {
 
 export const analyzeBluesky = async (query, maxResults = 100, options = {}) => {
   try {
-    return await analyzePlatformCore({
+    const requestedMaxResults = maxResults;
+    const boostedMaxResults = Math.max(requestedMaxResults, 1000);
+
+    const result = await analyzePlatformCore({
       platform: 'bluesky',
       query,
-      maxResults,
+      maxResults: boostedMaxResults,
       options,
       fetchFn: blueskyService.searchPosts, // now receives (query, maxResults, options)
+
       getDate: (p) => p.created_at,
       getText: (p) => p.text,
       sampleMapper: (post, r) => ({
@@ -393,6 +552,12 @@ export const analyzeBluesky = async (query, maxResults = 100, options = {}) => {
         metrics: post.metrics
       })
     });
+
+    return {
+      ...result,
+      maxResults: boostedMaxResults,
+      requestedMaxResults
+    };
   } catch (e) {
     throw new Error(`Bluesky Analysis Error: ${e.message}`);
   }
@@ -416,6 +581,7 @@ export const analyzeMultiplePlatforms = async (query, maxResults = 100, options 
     }
 
     const total = ok.reduce((s, r) => s + (r.total_analyzed || 0), 0);
+    const formatPlatform = (name = '') => (name ? name[0].toUpperCase() + name.slice(1) : name);
 
     const combined = ok.reduce((acc, r) => {
       acc.positive += r.sentiment_distribution?.positive || 0;
@@ -445,22 +611,53 @@ export const analyzeMultiplePlatforms = async (query, maxResults = 100, options 
 
     const samplePosts = ok.flatMap(r => (r.samplePosts || []).slice(0, 5));
     const platformBreakdown = ok.flatMap(r => r.platformBreakdown || []);
+    const timeframe = options?.timeframe || 'last7days';
+    const sentimentOverTime = mergeSentimentOverTime(ok, timeframe, new Date().toISOString());
+
+    const counts = ok.reduce((acc, r) => {
+      const c = r.counts || {};
+      acc.fetched += c.fetched || 0;
+      acc.afterTimeframe += c.afterTimeframe || 0;
+      acc.afterFilters += c.afterFilters || 0;
+      acc.removedByTimeframe += c.removedByTimeframe || 0;
+      acc.removedByFilters += c.removedByFilters || 0;
+      return acc;
+    }, {
+      fetched: 0,
+      afterTimeframe: 0,
+      afterFilters: 0,
+      removedByTimeframe: 0,
+      removedByFilters: 0
+    });
 
     // ✅ Combine sarcasm stats
     const sarcasmDetectedTotal = ok.reduce((s, r) => s + (r.sarcasm?.detected || 0), 0);
     const sarcasmRatePercent = total > 0 ? Math.round((sarcasmDetectedTotal / total) * 100) : 0;
 
+    const baseInsights = generateInsights({
+      sentiment_distribution: combined,
+      total_analyzed: total,
+      topKeywords,
+      timeframe,
+      referenceDate: new Date().toISOString()
+    }, query);
+
+    const platformComparison = ok.length >= 2
+      ? ok.map(r => {
+        const label = formatPlatform(r.source);
+        const p = r.percentages || {};
+        return `${label}: ${Math.round(p.positive || 0)}% positive, ${Math.round(p.negative || 0)}% negative`;
+      }).join(' | ')
+      : null;
+
+    const platformsAnalyzed = ok.length
+      ? `Platforms analyzed: ${ok.map(r => formatPlatform(r.source)).join(', ')}`
+      : null;
+
     const insights = {
-      overall: `Overall ${overall} sentiment across ${total} posts indicates ${
-        percentages.positive >= 60 ? 'strong positive reception'
-          : percentages.negative >= 60 ? 'strong negative reception'
-            : 'mixed public opinion'
-      }`,
-      platformComparison: ok.length >= 2
-        ? ok.map(r => `${r.source}: ${r.percentages?.neutral ?? 0}% neutral`).join(' vs ')
-        : null,
-      topDrivers: topKeywords.slice(0, 3).map(k => `"${k.keyword}" (${k.sentiment})`),
-      platformsAnalyzed: ok.map(r => r.source).join(', ')
+      ...baseInsights,
+      platformComparison,
+      platformsAnalyzed
     };
 
     return {
@@ -475,7 +672,9 @@ export const analyzeMultiplePlatforms = async (query, maxResults = 100, options 
       insights,
       platformBreakdown,
       topKeywords,
+      counts,
       samplePosts,
+      sentimentOverTime,
       platforms: ok.reduce((acc, r) => {
         acc[r.source] = r;
         return acc;

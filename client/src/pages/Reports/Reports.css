@@ -28,3 +28,11 @@
   transform: translateY(-1px);
   transition: all 0.2s ease;
 }
+
+/* Deleting animation */
+.report-item-deleting {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+

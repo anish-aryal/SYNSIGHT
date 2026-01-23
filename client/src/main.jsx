@@ -58,7 +58,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/data-sources" element={<div className="p-4">Data Sources Page</div>} />
-                <Route path="/model-analysis" element={<div className="p-4">Model & Analysis Page</div>} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>

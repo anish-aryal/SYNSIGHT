@@ -32,7 +32,6 @@ export default function Sidebar() {
     { icon: FileText, label: 'Reports', path: '/reports' },
     { icon: History, label: 'History', path: '/history' },
     { icon: Database, label: 'Data Sources', path: '/data-sources' },
-    { icon: BarChart3, label: 'Model & Analysis', path: '/model-analysis' },
     { icon: Settings, label: 'Settings', path: '/settings' }
   ];
 

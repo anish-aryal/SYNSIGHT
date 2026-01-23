@@ -56,8 +56,7 @@ class ReportService {
       topKeywords = [],
       samplePosts = [],
       platformBreakdown = [],
-      dateRange = {},
-      timeAnalysis = []
+      dateRange = {}
     } = analysisData || {};
 
     const platformSummary = (Array.isArray(platformBreakdown) && platformBreakdown.length)
@@ -77,15 +76,6 @@ class ReportService {
           .map(k => `"${this.safeText(k?.keyword)}" (count: ${k?.count ?? 0}, sentiment: ${k?.sentiment ?? 'N/A'})`)
           .join('\n')
       : 'No keywords identified';
-
-    const peakHours = (Array.isArray(timeAnalysis) && timeAnalysis.length)
-      ? timeAnalysis
-          .filter(t => (t?.volume ?? 0) > 0 && Number.isFinite(Number(t?.hour)))
-          .sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
-          .slice(0, 3)
-          .map(t => `${Number(t.hour)}:00 (${t.volume} posts)`)
-          .join(', ') || 'N/A'
-      : 'N/A';
 
     // Bounded post selection to avoid token blowups
     const selectedPosts = this.selectSamplePosts(samplePosts, 60);
@@ -118,8 +108,6 @@ SENTIMENT METRICS:
 
 PLATFORM DATA:
 ${platformSummary}
-
-PEAK ACTIVITY: ${peakHours}
 
 TOP KEYWORDS:
 ${keywordData}

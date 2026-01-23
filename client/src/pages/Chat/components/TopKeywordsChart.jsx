@@ -16,9 +16,7 @@ export default function TopKeywordsChart({ keywords }) {
             <Col xs={12}>
               {topKeywords.map((keyword, index) => (
                 <div key={index} className="keyword-row">
-                  <span className={`keyword-label ${keyword.sentiment}`}>
-                    {keyword.keyword}
-                  </span>
+                  <span className="keyword-text">{keyword.keyword}</span>
                   <div className="keyword-bar-container">
                     <div 
                       className={`keyword-bar ${keyword.sentiment}`}

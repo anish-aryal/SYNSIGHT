@@ -40,6 +40,20 @@ export const generateReport = async (req, res) => {
 
     const generatedReport = await reportService.generateReport(data, query);
 
+    // Calculate dominant sentiment based on highest percentage
+    const positive = Number(data.percentages?.positive ?? 0);
+    const negative = Number(data.percentages?.negative ?? 0);
+    const neutral = Number(data.percentages?.neutral ?? 0);
+
+    let overallSentiment = data.overall_sentiment || 'neutral';
+    if (positive >= negative && positive >= neutral) {
+      overallSentiment = 'positive';
+    } else if (negative >= positive && negative >= neutral) {
+      overallSentiment = 'negative';
+    } else {
+      overallSentiment = 'neutral';
+    }
+
     const report = await Report.create({
       user: req.user._id,
       analysis: analysisId,
@@ -47,7 +61,7 @@ export const generateReport = async (req, res) => {
       content: generatedReport.content,
       source: data.source || 'multi-platform',
       sentiment: {
-        overall: data.overall_sentiment,
+        overall: overallSentiment,
         positive: data.percentages?.positive,
         negative: data.percentages?.negative,
         neutral: data.percentages?.neutral

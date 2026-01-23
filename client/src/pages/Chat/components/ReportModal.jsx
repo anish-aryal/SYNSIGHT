@@ -19,7 +19,10 @@ export default function ReportModal({
   isGenerating,
   report,
   error,
-  onDownload
+  onDownload,
+  loadingTitle = 'Generating Report...',
+  loadingDescription = 'AI is analyzing the data and creating insights. This may take 15-30 seconds.',
+  successMessage = 'Report generated successfully'
 }) {
   return (
     <Modal isOpen={isOpen} toggle={!isGenerating ? toggle : undefined} size="lg" className="report-modal">
@@ -36,9 +39,9 @@ export default function ReportModal({
             <Col xs={12}>
               <div className="report-loading">
                 <Spinner color="primary" />
-                <h5 className="mt-3 mb-2">Generating Report...</h5>
+                <h5 className="mt-3 mb-2">{loadingTitle}</h5>
                 <p className="text-muted">
-                  AI is analyzing the data and creating insights. This may take 15-30 seconds.
+                  {loadingDescription}
                 </p>
               </div>
             </Col>
@@ -65,7 +68,7 @@ export default function ReportModal({
             <Col xs={12}>
               <div className="report-success-badge">
                 <CheckCircle size={16} />
-                <span>Report generated successfully</span>
+                <span>{successMessage}</span>
               </div>
               <div className="report-content">
                 <ReactMarkdown>{report.content}</ReactMarkdown>

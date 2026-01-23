@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Spinner } from 'reactstrap';
 import { 
-  Download, 
   Share2, 
   FolderPlus, 
-  RefreshCw,
+  Download,
   FileText,
   Eye
 } from 'lucide-react';
@@ -12,7 +11,7 @@ import { useApp } from '../../../api/context/AppContext';
 import reportService from '../../../api/services/reportService';
 import ReportModal from './ReportModal';
 
-export default function ActionBar({ query, results, onRefresh }) {
+export default function ActionBar({ query, results, onCompare, onRefresh }) {
   const { showSuccess, showError } = useApp();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,7 +21,7 @@ export default function ActionBar({ query, results, onRefresh }) {
   const [existingReport, setExistingReport] = useState(null);
   const [error, setError] = useState(null);
 
-  const analysisId = results?.analysisId;
+  const analysisId = results?.analysisId || results?._id;
 
   // Check if report already exists for this analysis
   useEffect(() => {
@@ -106,10 +105,6 @@ export default function ActionBar({ query, results, onRefresh }) {
     showSuccess('Report downloaded');
   };
 
-  const handleExport = () => {
-    console.log('Export analysis for:', query);
-  };
-
   const handleShare = () => {
     console.log('Share analysis');
   };
@@ -118,28 +113,29 @@ export default function ActionBar({ query, results, onRefresh }) {
     console.log('Save to project');
   };
 
+  const handleCompare = () => {
+    if (onCompare) {
+      onCompare();
+      return;
+    }
+    if (onRefresh) {
+      onRefresh();
+      return;
+    }
+    console.log('Compare topic');
+  };
+
   const hasExistingReport = !!existingReport;
 
   return (
     <>
-      <div className="action-bar d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+      <div className="action-bar d-flex gap-2 mt-4 pt-3 border-top">
         <Button
           outline
           color="secondary"
           size="sm"
-          className="d-flex align-items-center gap-2"
-          onClick={onRefresh}
-        >
-          <RefreshCw size={14} />
-          <span>Refresh</span>
-        </Button>
-
-        <Button
-          outline
-          color="secondary"
-          size="sm"
-          className="d-flex align-items-center gap-2"
-          onClick={handleExport}
+          className="action-btn-outline d-flex align-items-center gap-2"
+          onClick={handleCompare}
         >
           <Download size={14} />
           <span>Export</span>
@@ -149,29 +145,28 @@ export default function ActionBar({ query, results, onRefresh }) {
           outline
           color="secondary"
           size="sm"
-          className="d-flex align-items-center gap-2"
-          onClick={handleShare}
+          className="action-btn-outline d-flex align-items-center gap-2"
+          onClick={handleSaveToProject}
         >
-          <Share2 size={14} />
-          <span>Share</span>
+          <FolderPlus size={14} />
+          <span>Save as Project</span>
         </Button>
 
         <Button
           outline
           color="secondary"
           size="sm"
-          className="d-flex align-items-center gap-2"
-          onClick={handleSaveToProject}
+          className="action-btn-outline d-flex align-items-center gap-2"
+          onClick={handleShare}
         >
-          <FolderPlus size={14} />
-          <span>Save to Project</span>
+          <Share2 size={14} />
+          <span>Share</span>
         </Button>
 
         {isCheckingReport ? (
           <Button
-            color="primary"
             size="sm"
-            className="d-flex align-items-center gap-2 ms-auto"
+            className="gradient-primary action-btn-primary d-flex align-items-center gap-2 ms-auto"
             disabled
           >
             <Spinner size="sm" />
@@ -181,7 +176,7 @@ export default function ActionBar({ query, results, onRefresh }) {
           <Button
             color="success"
             size="sm"
-            className="d-flex align-items-center gap-2 ms-auto"
+            className="action-btn-primary d-flex align-items-center gap-2 ms-auto"
             onClick={handleViewReport}
           >
             <Eye size={14} />
@@ -189,9 +184,8 @@ export default function ActionBar({ query, results, onRefresh }) {
           </Button>
         ) : (
           <Button
-            color="primary"
             size="sm"
-            className="d-flex align-items-center gap-2 ms-auto"
+            className="gradient-primary action-btn-primary d-flex align-items-center gap-2 ms-auto"
             onClick={handleGenerateReport}
           >
             <FileText size={14} />

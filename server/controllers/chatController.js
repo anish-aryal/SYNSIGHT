@@ -1,4 +1,6 @@
 import Chat from '../models/Chat.js';
+import Analysis from '../sentimentAnalysis/models/Analysis.js';
+import Report from '../reports/models/Report.js';
 
 // @desc    Create new chat
 // @route   POST /api/chats
@@ -208,7 +210,7 @@ export const updateChat = async (req, res) => {
 // @access  Private
 export const deleteChat = async (req, res) => {
   try {
-    const chat = await Chat.findOneAndDelete({
+    const chat = await Chat.findOne({
       _id: req.params.id,
       user: req.user._id
     });
@@ -219,6 +221,36 @@ export const deleteChat = async (req, res) => {
         message: 'Chat not found'
       });
     }
+
+    // Collect all analysisIds from chat messages
+    const analysisIds = chat.messages
+      .filter(msg => msg.analysisId)
+      .map(msg => msg.analysisId);
+
+    if (analysisIds.length > 0) {
+      // Find analyses that have reports (these should NOT be deleted)
+      const reportsWithAnalysis = await Report.find({
+        analysis: { $in: analysisIds },
+        status: { $ne: 'deleted' }
+      }).select('analysis');
+
+      const analysisIdsWithReports = reportsWithAnalysis.map(report => report.analysis.toString());
+
+      // Delete only analyses that don't have reports
+      const analysisIdsToDelete = analysisIds.filter(
+        id => !analysisIdsWithReports.includes(id.toString())
+      );
+
+      if (analysisIdsToDelete.length > 0) {
+        await Analysis.deleteMany({
+          _id: { $in: analysisIdsToDelete },
+          user: req.user._id
+        });
+      }
+    }
+
+    // Delete the chat
+    await Chat.findByIdAndDelete(chat._id);
 
     res.json({
       success: true,

@@ -18,15 +18,13 @@ export const ChatProvider = ({ children }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // ✅ Platform is selected from ChatHeader
+  // Platform selection for analysis
   const [selectedPlatform, setSelectedPlatform] = useState('all');
 
-  // ✅ Only what UI supports
+  // Analysis configuration options
   const [analysisOptions, setAnalysisOptions] = useState({
     timeframe: 'last7days',
     language: 'en',
-
-    // only used for "All Platforms" mode (future-proof)
     platforms: { twitter: true, reddit: true, bluesky: true }
   });
 
@@ -100,7 +98,7 @@ export const ChatProvider = ({ children }) => {
 
     let chatId = currentChatRef.current;
 
-    // ✅ Create a chat if needed (store only supported options)
+    // Create chat if it doesn't exist
     if (!chatId) {
       try {
         const createResponse = await chatService.createChat({
@@ -238,7 +236,7 @@ export const ChatProvider = ({ children }) => {
         currentStep,
         analysisSteps,
 
-        // ✅ now guaranteed available for ChatHeader + ChatInput
+        // Platform selection state
         selectedPlatform,
         setSelectedPlatform,
 

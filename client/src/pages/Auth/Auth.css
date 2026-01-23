@@ -56,14 +56,14 @@
   gap: 0.25rem;
   color: #1a1a1a;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.938rem;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-subheading);
   margin-bottom: 3rem;
   transition: all 0.2s ease;
 }
 
 .auth-back-link:hover {
-  color: #155DFC;
+  color: var(--color-primary-start);
 }
 
 .auth-branding {
@@ -85,7 +85,7 @@
 
 .auth-brand-name {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.5px;
   margin-bottom: 0.75rem;
   color: #1a1a1a;
@@ -93,7 +93,7 @@
 
 .auth-tagline {
   font-size: 1.375rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: #374151;
   line-height: 1.4;
   margin-bottom: 2.5rem;
@@ -411,3 +411,4 @@
     gap: 8px;
   }
 }
+

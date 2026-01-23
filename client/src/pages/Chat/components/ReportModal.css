@@ -1,6 +1,4 @@
-/* ========================================
-   REPORT MODAL
-   ======================================== */
+/* Report modal */
 
 .report-modal .modal-content {
   border-radius: 12px;
@@ -33,9 +31,7 @@
   align-items: center;
 }
 
-/* ========================================
-   LOADING STATE
-   ======================================== */
+/* Loading state */
 
 .report-loading {
   display: flex;
@@ -56,9 +52,7 @@
   max-width: 300px;
 }
 
-/* ========================================
-   ERROR STATE
-   ======================================== */
+/* Error state */
 
 .report-error {
   display: flex;
@@ -79,9 +73,7 @@
   max-width: 350px;
 }
 
-/* ========================================
-   SUCCESS STATE
-   ======================================== */
+/* Success state */
 
 .report-success-badge {
   display: inline-flex;
@@ -96,9 +88,7 @@
   margin-bottom: 1.5rem;
 }
 
-/* ========================================
-   REPORT CONTENT
-   ======================================== */
+/* Report content */
 
 .report-content {
   background-color: #f9fafb;
@@ -176,17 +166,13 @@
   margin: 1.5rem 0;
 }
 
-/* ========================================
-   REPORT META
-   ======================================== */
+/* Report meta */
 
 .report-meta {
   font-size: 0.8125rem;
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
+/* Responsive breakpoints */
 
 @media (max-width: 576px) {
   .report-modal-body {
@@ -206,3 +192,4 @@
     order: 2;
   }
 }
+
