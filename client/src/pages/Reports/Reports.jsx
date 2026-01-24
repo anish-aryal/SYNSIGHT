@@ -20,12 +20,12 @@ const PDF_PAGE = {
 const toPlainText = (content) => {
   if (!content) return '';
   let text = content;
+  text = text.replace(/^\s{0,3}#{1,6}\s+(.+)$/gm, '\n$1\n');
   text = text.replace(/```([\s\S]*?)```/g, '$1');
   text = text.replace(/`([^`]+)`/g, '$1');
   text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1');
   text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-  text = text.replace(/^\s{0,3}#{1,6}\s+/gm, '');
-  text = text.replace(/^\s*[-*+]\s+/gm, '- ');
+  text = text.replace(/^\s*[-*+]\s+/gm, '• ');
   text = text.replace(/^\s*\d+\.\s+/gm, (match) => match.trimStart());
   text = text.replace(/^\s*>\s?/gm, '');
   text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
@@ -33,6 +33,7 @@ const toPlainText = (content) => {
   text = text.replace(/__([^_]+)__/g, '$1');
   text = text.replace(/_([^_]+)_/g, '$1');
   text = text.replace(/~~([^~]+)~~/g, '$1');
+  text = text.replace(/\n{3,}/g, '\n\n');
   return text;
 };
 
