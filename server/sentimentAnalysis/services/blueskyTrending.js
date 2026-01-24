@@ -88,6 +88,45 @@ export const analyzeTrendingTopic = async (topic) => {
 };
 
 /**
+ * Get trending topics without sentiment analysis (fast path)
+ */
+export const getTrendingRaw = async () => {
+  try {
+    const now = Date.now();
+    if (trendingCache && (now - cacheTimestamp) < CACHE_DURATION) {
+      console.log('Returning cached trending topics');
+      return trendingCache;
+    }
+
+    const trendingTopics = await getBlueskTrendingAPI();
+
+    if (!trendingTopics || trendingTopics.length === 0) {
+      console.log('No trending topics found from API');
+      return [];
+    }
+
+    const topics = trendingTopics.slice(0, 15).map((topic) => ({
+      title: topic.title,
+      rawTitle: topic.rawText || topic.title.replace('#', ''),
+      count: topic.count || 0,
+      sentiment: null,
+      percentages: null,
+      distribution: null,
+      engagement: 0,
+      posts: []
+    }));
+
+    trendingCache = topics;
+    cacheTimestamp = Date.now();
+
+    return topics;
+  } catch (error) {
+    console.error('Error in getTrendingRaw:', error);
+    return [];
+  }
+};
+
+/**
  * Get trending topics with complete data (sentiment analysis)
  * Optimized version with caching
  */

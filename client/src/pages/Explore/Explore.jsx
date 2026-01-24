@@ -47,26 +47,6 @@ export default function Explore() {
     });
   };
 
-  const getSentimentColor = (sentiment) => {
-    const colors = {
-      positive: '#22c55e',
-      neutral: '#6b7280',
-      negative: '#ef4444'
-    };
-    return colors[sentiment] || '#6b7280';
-  };
-
-  const getSentimentPercentage = (topic) => {
-    if (!topic?.percentages || !topic?.sentiment) {
-      return null;
-    }
-    const value = topic.percentages[topic.sentiment];
-    if (typeof value !== 'number') {
-      return null;
-    }
-    return Math.round(value);
-  };
-
   return (
     <div className="explore-page">
       <Container className="mt-5">
@@ -151,13 +131,6 @@ export default function Explore() {
                                 </div>
                                 <div className="d-flex align-items-center gap-2 text-muted explore-meta">
                                   <span className="text-capitalize">{topic.category}</span>
-                                  <span className="explore-dot">•</span>
-                                  <span
-                                    style={{ color: getSentimentColor(topic.sentiment) }}
-                                    className="text-capitalize"
-                                  >
-                                    {topic.sentiment}
-                                  </span>
                                 </div>
                               </div>
 

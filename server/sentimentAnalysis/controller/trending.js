@@ -1,5 +1,5 @@
 import { searchPosts } from '../services/bluesky.js';
-import { getTrendingWithData } from '../services/blueskyTrending.js';
+import { getTrendingRaw } from '../services/blueskyTrending.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
 const calculateEngagement = (post) => {
@@ -49,7 +49,7 @@ export const getTrendingTopics = async (req, res) => {
     console.log('Fetching trending topics...');
 
     // Fetch trending topics from Bluesky API
-    const trendingData = await getTrendingWithData();
+    const trendingData = await getTrendingRaw();
 
     if (!trendingData || trendingData.length === 0) {
       return sendSuccessResponse(res, 'No trending topics found', {
@@ -80,9 +80,6 @@ export const getTrendingTopics = async (req, res) => {
         category: topicCategory,
         title: cleanTitle,
         mentions: trend.count > 1000 ? `${Math.round(trend.count / 1000)}K` : trend.count.toString(),
-        sentiment: trend.sentiment || calculateSentiment(trend.posts),
-        percentages: trend.percentages || null,
-        distribution: trend.distribution || null,
         trend: Math.min(Math.round(avgEngagement / 10), 100),
         keywords: [trend.rawTitle || trend.title.replace('#', '')],
         samplePosts: trend.posts.map(p => ({
