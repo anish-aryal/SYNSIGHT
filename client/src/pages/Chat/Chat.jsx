@@ -26,7 +26,11 @@ export default function Chat() {
     sendMessage,
     loadChat,
     startNewChat,
-    fetchChats
+    fetchChats,
+    selectedPlatform,
+    analysisOptions,
+    setSelectedPlatform,
+    setAnalysisOptions
   } = useChat();
   const { showInfo } = useApp();
 
@@ -74,6 +78,16 @@ export default function Chat() {
     if (location.state?.autoAnalyze && location.state?.query && !hasAutoAnalyzed.current) {
       hasAutoAnalyzed.current = true;
       const query = location.state.query;
+      const isExplore = location.state?.source === 'explore';
+      const platform = location.state?.platform || (isExplore ? 'bluesky' : selectedPlatform);
+      const timeframe = location.state?.timeframe || (isExplore ? 'last24hours' : analysisOptions.timeframe);
+
+      if (isExplore || location.state?.platform) {
+        setSelectedPlatform(platform);
+      }
+      if (isExplore || location.state?.timeframe) {
+        setAnalysisOptions((prev) => ({ ...prev, timeframe }));
+      }
 
       // Ensure auto-analyze from Explore always starts a fresh chat
       startNewChat();
@@ -83,16 +97,16 @@ export default function Chat() {
       navigate(location.pathname, { replace: true, state: {} });
 
       // Trigger analysis
-      handleSend(query);
+      handleSend(query, { platform, timeframe });
     }
   }, [location.state]);
 
   // Handle sending message
-  const handleSend = async (query) => {
+  const handleSend = async (query, overrides) => {
     if (!query.trim()) return;
     setSearchQuery('');
     
-    const result = await sendMessage(query);
+    const result = await sendMessage(query, overrides);
     
     // If this created a new chat, update URL
     if (result && result.chatId && !chatId) {

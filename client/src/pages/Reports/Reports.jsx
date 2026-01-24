@@ -8,6 +8,131 @@ import reportService from '../../api/services/reportService';
 import { useApp } from '../../api/context/AppContext';
 import './Reports.css';
 
+const PDF_PAGE = {
+  width: 612,
+  height: 792,
+  margin: 72,
+  fontSize: 12,
+  lineHeight: 14,
+  maxCharsPerLine: 80
+};
+
+const toPlainText = (content) => {
+  if (!content) return '';
+  let text = content;
+  text = text.replace(/```([\s\S]*?)```/g, '$1');
+  text = text.replace(/`([^`]+)`/g, '$1');
+  text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1');
+  text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  text = text.replace(/^\s{0,3}#{1,6}\s+/gm, '');
+  text = text.replace(/^\s*[-*+]\s+/gm, '- ');
+  text = text.replace(/^\s*\d+\.\s+/gm, (match) => match.trimStart());
+  text = text.replace(/^\s*>\s?/gm, '');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+  text = text.replace(/\*([^*]+)\*/g, '$1');
+  text = text.replace(/__([^_]+)__/g, '$1');
+  text = text.replace(/_([^_]+)_/g, '$1');
+  text = text.replace(/~~([^~]+)~~/g, '$1');
+  return text;
+};
+
+const wrapText = (text, maxChars) => {
+  const lines = [];
+  const sourceLines = text.split(/\r?\n/);
+  sourceLines.forEach((rawLine) => {
+    const line = rawLine.trimEnd();
+    if (!line) {
+      lines.push('');
+      return;
+    }
+    const words = line.split(/\s+/);
+    let current = '';
+    words.forEach((word) => {
+      if (!current) {
+        current = word;
+        return;
+      }
+      if (current.length + 1 + word.length <= maxChars) {
+        current += ` ${word}`;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+    if (current) lines.push(current);
+  });
+  return lines;
+};
+
+const escapePdfText = (text) =>
+  text
+    .replace(/[^\x00-\x7F]/g, '?')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+
+const buildPdfBlob = (markdown) => {
+  const plainText = toPlainText(markdown);
+  const lines = wrapText(plainText, PDF_PAGE.maxCharsPerLine);
+  const maxLinesPerPage = Math.floor((PDF_PAGE.height - PDF_PAGE.margin * 2) / PDF_PAGE.lineHeight);
+  const pages = [];
+  for (let i = 0; i < lines.length; i += maxLinesPerPage) {
+    pages.push(lines.slice(i, i + maxLinesPerPage));
+  }
+  if (pages.length === 0) pages.push(['']);
+
+  let nextId = 1;
+  const catalogId = nextId++;
+  const pagesId = nextId++;
+  const fontId = nextId++;
+  const pageIds = [];
+  const contentIds = [];
+  const objects = {};
+
+  pages.forEach((pageLines) => {
+    const pageId = nextId++;
+    const contentId = nextId++;
+    pageIds.push(pageId);
+    contentIds.push(contentId);
+
+    const textLines = pageLines.map((line, index) => {
+      const prefix = index === 0
+        ? `${PDF_PAGE.margin} ${PDF_PAGE.height - PDF_PAGE.margin} Td`
+        : `0 -${PDF_PAGE.lineHeight} Td`;
+      return `${prefix}\n(${escapePdfText(line)}) Tj`;
+    });
+
+    const stream = `BT\n/F1 ${PDF_PAGE.fontSize} Tf\n${textLines.join('\n')}\nET`;
+    objects[contentId] = `<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`;
+    objects[pageId] = `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PDF_PAGE.width} ${PDF_PAGE.height}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+  });
+
+  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objects[pagesId] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
+  objects[fontId] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [];
+  const encoder = new TextEncoder();
+
+  for (let id = 1; id < nextId; id += 1) {
+    offsets[id] = encoder.encode(pdf).length;
+    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+  }
+
+  const xrefOffset = encoder.encode(pdf).length;
+  pdf += 'xref\n';
+  pdf += `0 ${nextId}\n`;
+  pdf += '0000000000 65535 f \n';
+  for (let id = 1; id < nextId; id += 1) {
+    const offset = String(offsets[id]).padStart(10, '0');
+    pdf += `${offset} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${nextId} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return new Blob([pdf], { type: 'application/pdf' });
+};
+
 export default function Reports() {
   const { showError, showSuccess } = useApp();
 
@@ -76,13 +201,13 @@ export default function Reports() {
   const buildReportFilename = (report) => {
     const nameSource = report?.query || report?.title || 'analysis';
     const slug = nameSource.trim().toLowerCase().replace(/\s+/g, '-');
-    return `sentiment-report-${slug || 'analysis'}-${Date.now()}.md`;
+    return `sentiment-report-${slug || 'analysis'}-${Date.now()}.pdf`;
   };
 
   const downloadReportFile = (report) => {
     if (!report?.content) return false;
 
-    const blob = new Blob([report.content], { type: 'text/markdown' });
+    const blob = buildPdfBlob(report.content);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

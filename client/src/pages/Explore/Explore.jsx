@@ -43,7 +43,13 @@ export default function Explore() {
       : topic.title.replace('#', '');
 
     navigate('/chat', {
-      state: { autoAnalyze: true, query }
+      state: {
+        autoAnalyze: true,
+        query,
+        source: 'explore',
+        platform: 'bluesky',
+        timeframe: 'last24hours'
+      }
     });
   };
 

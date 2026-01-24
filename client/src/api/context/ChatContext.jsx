@@ -113,9 +113,19 @@ export const ChatProvider = ({ children }) => {
     }
   }, [showError, startNewChat]);
 
-  const sendMessage = useCallback(async (query) => {
+  const sendMessage = useCallback(async (query, overrides = {}) => {
     const trimmed = (query || '').trim();
     if (!trimmed) return null;
+
+    const effectivePlatform = overrides.platform ?? selectedPlatform;
+    const effectiveTimeframe = overrides.timeframe ?? analysisOptions.timeframe;
+    const effectiveLanguage = overrides.language ?? analysisOptions.language;
+    const effectivePlatforms = overrides.platforms ?? analysisOptions.platforms;
+    const effectiveOptions = {
+      timeframe: effectiveTimeframe,
+      language: effectiveLanguage,
+      platforms: effectivePlatforms
+    };
 
     let chatId = currentChatRef.current;
 
@@ -123,10 +133,10 @@ export const ChatProvider = ({ children }) => {
     if (!chatId) {
       try {
         const createRes = await chatService.createChat({
-          platform: selectedPlatform,
+          platform: effectivePlatform,
           options: {
-            timeframe: analysisOptions.timeframe,
-            language: analysisOptions.language
+            timeframe: effectiveTimeframe,
+            language: effectiveLanguage
           }
         });
 
@@ -160,9 +170,9 @@ export const ChatProvider = ({ children }) => {
     try {
       const [_, analysisRes] = await Promise.all([
         simulateSteps(),
-        selectedPlatform === 'all'
-          ? analysisService.analyzeMultiPlatform(trimmed, analysisOptions, 100)
-          : analysisService.analyzePlatform(selectedPlatform, trimmed, analysisOptions, 100)
+        effectivePlatform === 'all'
+          ? analysisService.analyzeMultiPlatform(trimmed, effectiveOptions, 100)
+          : analysisService.analyzePlatform(effectivePlatform, trimmed, effectiveOptions, 100)
       ]);
 
       if (!analysisRes?.success) {
