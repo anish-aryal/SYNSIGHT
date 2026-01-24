@@ -1,6 +1,17 @@
 import reportService from '../services/reportService.js';
+import { generateReportPdf } from '../services/pdfService.js';
 import Report from '../models/Report.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
+
+const buildReportFilename = (report) => {
+  const nameSource = report?.query || report?.title || 'analysis';
+  const slug = nameSource
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  return `sentiment-report-${slug || 'analysis'}-${Date.now()}.pdf`;
+};
 
 export const generateReport = async (req, res) => {
   try {
@@ -136,7 +147,8 @@ export const getReportById = async (req, res) => {
 
     const report = await Report.findOne({
       _id: id,
-      user: req.user._id
+      user: req.user._id,
+      status: 'generated'
     });
 
     if (!report) {
@@ -189,5 +201,38 @@ export const deleteReport = async (req, res) => {
     return sendSuccessResponse(res, 'Report deleted successfully');
   } catch (error) {
     return sendErrorResponse(res, error.message || 'Failed to delete report', 500);
+  }
+};
+
+export const downloadReportPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const report = await Report.findOne({
+      _id: id,
+      user: req.user._id
+    });
+
+    if (!report) {
+      return sendErrorResponse(res, 'Report not found', 404);
+    }
+
+    const title = report.query || report.title || 'Sentiment Report';
+    const pdfBuffer = await generateReportPdf({
+      title,
+      markdown: report.content,
+      meta: {
+        createdAt: report.createdAt,
+        totalAnalyzed: report.totalAnalyzed,
+        sentiment: report.sentiment
+      }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${buildReportFilename(report)}"`);
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Report PDF generation error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to generate report PDF', 500);
   }
 };

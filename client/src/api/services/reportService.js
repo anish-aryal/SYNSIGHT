@@ -25,10 +25,16 @@ export const deleteReport = async (id) => {
   return response.data;
 };
 
+export const downloadReportPdf = async (id) => {
+  const response = await api.get(`/reports/${id}/pdf`, { responseType: 'blob' });
+  return response;
+};
+
 export default {
   generateReport,
   getReports,
   getReportById,
   getReportByAnalysisId,
-  deleteReport
+  deleteReport,
+  downloadReportPdf
 };
