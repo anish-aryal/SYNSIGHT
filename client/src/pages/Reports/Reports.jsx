@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Container, Row, Col, Button, Spinner, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
+import { Container, Row, Col, Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import ReportsList from './components/ReportsList';
 import EmptyReports from './components/EmptyReports';
 import ReportModal from '../Chat/components/ReportModal';
 import reportService from '../../api/services/reportService';
+import projectService from '../../api/services/projectService';
 import { useApp } from '../../api/context/AppContext';
+import ProjectPickerModal from '../../components/projects/ProjectPickerModal';
 import './Reports.css';
 
 const getFilenameFromHeaders = (headers) => {
@@ -32,6 +34,11 @@ export default function Reports() {
   const [deletingReportId, setDeletingReportId] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [projectTargetReport, setProjectTargetReport] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsSaving, setProjectsSaving] = useState(false);
 
   const reportCacheRef = useRef({});
 
@@ -62,7 +69,9 @@ export default function Reports() {
 
   const filteredReports = reports.filter((report) => {
     const query = report?.query || report?.title || '';
-    return query.toLowerCase().includes(searchQuery.toLowerCase());
+    const projectName = report?.project?.name || '';
+    const haystack = `${query} ${projectName}`.toLowerCase();
+    return haystack.includes(searchQuery.toLowerCase());
   });
 
   const getReportId = (report) => report?._id || report?.id;
@@ -167,6 +176,74 @@ export default function Reports() {
     }
   };
 
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!isProjectModalOpen) return;
+      setProjectsLoading(true);
+      try {
+        const response = await projectService.getProjects();
+        if (response?.success) {
+          setProjects(Array.isArray(response.data) ? response.data : []);
+        } else {
+          showError(response?.message || 'Failed to load projects');
+        }
+      } catch (err) {
+        const message = err.response?.data?.message || err.message || 'Failed to load projects';
+        showError(message);
+      } finally {
+        setProjectsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [isProjectModalOpen, showError]);
+
+  const handleOpenProjectModal = (report) => {
+    if (!report) return;
+    setProjectTargetReport(report);
+    setIsProjectModalOpen(true);
+  };
+
+  const handleAssignReportProject = async (projectId) => {
+    const reportId = getReportId(projectTargetReport);
+    if (!reportId) return;
+    setProjectsSaving(true);
+    try {
+      const response = await reportService.updateReportProject(reportId, projectId);
+      if (response?.success) {
+        showSuccess('Report saved to project');
+        setReports((prev) =>
+          prev.map((item) => (getReportId(item) === reportId ? response.data : item))
+        );
+        setIsProjectModalOpen(false);
+        setProjectTargetReport(null);
+      } else {
+        showError(response?.message || 'Failed to save report to project');
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to save report to project';
+      showError(message);
+    } finally {
+      setProjectsSaving(false);
+    }
+  };
+
+  const handleCreateProjectAndAssign = async (payload) => {
+    setProjectsSaving(true);
+    try {
+      const created = await projectService.createProject(payload);
+      if (!created?.success || !created.data?._id) {
+        throw new Error(created?.message || 'Failed to create project');
+      }
+
+      await handleAssignReportProject(created.data._id);
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to create project';
+      showError(message);
+      setProjectsSaving(false);
+    }
+  };
+
   const toggleModal = () => {
     if (isReportLoading) return;
     setIsModalOpen((prev) => !prev);
@@ -236,7 +313,11 @@ export default function Reports() {
 
             {isLoading ? (
               <div className="text-center py-5">
-                <Spinner color="primary" />
+                <div className="skeleton-wrapper">
+                  <div className="skeleton-line" style={{ width: '45%' }} />
+                  <div className="skeleton-line" style={{ width: '90%' }} />
+                  <div className="skeleton-line" style={{ width: '70%' }} />
+                </div>
               </div>
             ) : listError ? (
               <div className="text-center py-5">
@@ -255,6 +336,7 @@ export default function Reports() {
                 onViewReport={handleViewReport}
                 onDownloadReport={handleDownloadReport}
                 onDeleteReport={handleDeleteReport}
+                onAssignProject={handleOpenProjectModal}
                 viewingReportId={viewingReportId}
                 downloadingReportId={downloadingReportId}
                 deletingReportId={deletingReportId}
@@ -294,8 +376,11 @@ export default function Reports() {
           <Button color="danger" onClick={confirmDelete} disabled={!!deletingReportId}>
             {deletingReportId ? (
               <>
-                <Spinner size="sm" className="me-2" />
-                Deleting...
+                <span
+                  className="skeleton-line skeleton-inline me-2"
+                  style={{ width: '60px', height: '12px' }}
+                />
+                <span>Deleting...</span>
               </>
             ) : (
               'Delete'
@@ -303,6 +388,20 @@ export default function Reports() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      <ProjectPickerModal
+        isOpen={isProjectModalOpen}
+        toggle={() => {
+          setIsProjectModalOpen(false);
+          setProjectTargetReport(null);
+        }}
+        projects={projects}
+        isLoading={projectsLoading}
+        isSaving={projectsSaving}
+        onAssign={handleAssignReportProject}
+        onCreateAndAssign={handleCreateProjectAndAssign}
+        title="Save report to project"
+      />
     </div>
   );
 }

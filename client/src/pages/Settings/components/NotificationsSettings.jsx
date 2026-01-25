@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardBody, CardFooter, Button, Label, Input, Spinner } from 'reactstrap';
+import { Card, CardHeader, CardBody, CardFooter, Button, Label, Input } from 'reactstrap';
 import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
 import { updatePreferences } from '../../../api/services/profileService';
@@ -180,8 +180,8 @@ export default function NotificationsSettings() {
           >
             {loading ? (
               <>
-                <Spinner size="sm" className="me-2" />
-                Saving...
+                <span className="skeleton-line skeleton-inline me-2" style={{ width: '60px', height: '12px' }} />
+                <span>Saving...</span>
               </>
             ) : (
               'Save Changes'

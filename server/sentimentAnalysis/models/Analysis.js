@@ -33,6 +33,14 @@ const analysisSchema = new mongoose.Schema(
 
     topKeywords: [{ keyword: String, count: Number, sentiment: String }],
 
+    sentimentOverTime: [{
+      date: String,
+      positive: Number,
+      neutral: Number,
+      negative: Number,
+      total: Number
+    }],
+
     samplePosts: [{
       text: String,
       platform: String,
@@ -54,6 +62,12 @@ const analysisSchema = new mongoose.Schema(
       // ✅ store options used
       timeframe: { type: String },
       language: { type: String }
+    },
+
+    project: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      required: false
     }
   },
   { timestamps: true }
@@ -62,5 +76,6 @@ const analysisSchema = new mongoose.Schema(
 analysisSchema.index({ user: 1, createdAt: -1 });
 analysisSchema.index({ query: 1 });
 analysisSchema.index({ source: 1 });
+analysisSchema.index({ user: 1, project: 1 });
 
 export default mongoose.model('Analysis', analysisSchema);

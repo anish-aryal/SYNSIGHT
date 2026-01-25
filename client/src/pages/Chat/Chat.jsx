@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Badge, Spinner } from 'reactstrap';
+import { Container, Row, Col, Badge } from 'reactstrap';
 import ChatHeader from './components/ChatHeader';
 import ChatInput from './components/ChatInput';
 import MessageBubble from './components/MessageBubble';
@@ -218,7 +218,7 @@ export default function Chat() {
                               </span>
                               <span className="message-name">SentimentAI</span>
                               <Badge color="light" pill className="analyzing-badge message-bubble-meta">
-                                <Spinner size="sm" className="me-1" />
+                                <span className="skeleton-line skeleton-inline me-1" style={{ width: '12px', height: '12px' }} />
                                 Analyzing
                               </Badge>
                             </div>

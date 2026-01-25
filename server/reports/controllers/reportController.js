@@ -1,6 +1,8 @@
 import reportService from '../services/reportService.js';
 import { generateReportPdf } from '../services/pdfService.js';
 import Report from '../models/Report.js';
+import Analysis from '../../sentimentAnalysis/models/Analysis.js';
+import Project from '../../projects/models/Project.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
 const buildReportFilename = (report) => {
@@ -44,7 +46,36 @@ export const generateReport = async (req, res) => {
           sentiment: existing.sentiment,
           totalAnalyzed: existing.totalAnalyzed,
           usage: existing.usage,
+          project: existing.project || null,
           createdAt: existing.createdAt
+        });
+      }
+    }
+
+    let project = null;
+    const requestedProjectId = data.projectId || null;
+
+    if (requestedProjectId) {
+      project = await Project.findOne({
+        _id: requestedProjectId,
+        user: req.user._id,
+        status: { $ne: 'deleted' }
+      });
+
+      if (!project) {
+        return sendErrorResponse(res, 'Project not found', 404);
+      }
+    } else if (analysisId) {
+      const analysis = await Analysis.findOne({
+        _id: analysisId,
+        user: req.user._id
+      }).select('project');
+
+      if (analysis?.project) {
+        project = await Project.findOne({
+          _id: analysis.project,
+          user: req.user._id,
+          status: { $ne: 'deleted' }
         });
       }
     }
@@ -68,6 +99,7 @@ export const generateReport = async (req, res) => {
     const report = await Report.create({
       user: req.user._id,
       analysis: analysisId,
+      project: project?._id,
       query,
       content: generatedReport.content,
       source: data.source || 'multi-platform',
@@ -81,6 +113,10 @@ export const generateReport = async (req, res) => {
       usage: generatedReport.usage
     });
 
+    if (project) {
+      await Project.findByIdAndUpdate(project._id, { lastActivityAt: new Date() });
+    }
+
     return sendSuccessResponse(res, 'Report generated successfully', {
       _id: report._id,
       content: report.content,
@@ -89,6 +125,7 @@ export const generateReport = async (req, res) => {
       sentiment: report.sentiment,
       totalAnalyzed: report.totalAnalyzed,
       usage: report.usage,
+      project: report.project || null,
       createdAt: report.createdAt
     });
   } catch (error) {
@@ -111,6 +148,7 @@ export const generateReport = async (req, res) => {
             sentiment: existing.sentiment,
             totalAnalyzed: existing.totalAnalyzed,
             usage: existing.usage,
+            project: existing.project || null,
             createdAt: existing.createdAt
           });
         }
@@ -132,6 +170,7 @@ export const getReports = async (req, res) => {
     })
     .sort({ createdAt: -1 })
     .select('-content')
+    .populate('project', 'name')
     .limit(50);
 
     return sendSuccessResponse(res, 'Reports fetched successfully', reports);
@@ -149,7 +188,7 @@ export const getReportById = async (req, res) => {
       _id: id,
       user: req.user._id,
       status: 'generated'
-    });
+    }).populate('project', 'name');
 
     if (!report) {
       return sendErrorResponse(res, 'Report not found', 404);
@@ -170,7 +209,7 @@ export const getReportByAnalysisId = async (req, res) => {
       analysis: analysisId,
       user: req.user._id,
       status: 'generated'
-    });
+    }).populate('project', 'name');
 
     if (!report) {
       return sendSuccessResponse(res, 'No report found', null);
@@ -204,13 +243,52 @@ export const deleteReport = async (req, res) => {
   }
 };
 
+export const updateReportProject = async (req, res) => {
+  try {
+    const { projectId } = req.body;
+
+    let project = null;
+    if (projectId) {
+      project = await Project.findOne({
+        _id: projectId,
+        user: req.user._id,
+        status: { $ne: 'deleted' }
+      });
+
+      if (!project) {
+        return sendErrorResponse(res, 'Project not found', 404);
+      }
+    }
+
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, status: 'generated' },
+      { project: project ? project._id : null },
+      { new: true }
+    ).populate('project', 'name');
+
+    if (!report) {
+      return sendErrorResponse(res, 'Report not found', 404);
+    }
+
+    if (project) {
+      await Project.findByIdAndUpdate(project._id, { lastActivityAt: new Date() });
+    }
+
+    return sendSuccessResponse(res, 'Report updated successfully', report);
+  } catch (error) {
+    console.error('Update report project error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to update report', 500);
+  }
+};
+
 export const downloadReportPdf = async (req, res) => {
   try {
     const { id } = req.params;
 
     const report = await Report.findOne({
       _id: id,
-      user: req.user._id
+      user: req.user._id,
+      status: 'generated'
     });
 
     if (!report) {

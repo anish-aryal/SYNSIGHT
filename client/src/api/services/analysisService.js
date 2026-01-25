@@ -35,3 +35,18 @@ export const analyzeText = async (text) => {
   const response = await api.post('/analysis/text', { text });
   return response.data;
 };
+
+export const updateAnalysisProject = async (analysisId, projectId) => {
+  const response = await api.patch(`/analysis/${analysisId}/project`, { projectId });
+  return response.data;
+};
+
+export const getAnalysisById = async (analysisId) => {
+  const response = await api.get(`/analysis/${analysisId}`);
+  return response.data;
+};
+
+export const refreshAnalysis = async (analysisId, payload) => {
+  const response = await api.post(`/analysis/${analysisId}/refresh`, payload);
+  return response.data;
+};

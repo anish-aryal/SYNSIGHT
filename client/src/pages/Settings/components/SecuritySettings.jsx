@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardBody, FormGroup, Label, Input, Button, Spinner, Badge } from 'reactstrap';
+import { Card, CardHeader, CardBody, FormGroup, Label, Input, Button, Badge } from 'reactstrap';
 import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
 import { updatePassword, toggleTwoFactor, getActiveSessions, terminateSession } from '../../../api/services/profileService';
@@ -242,8 +242,8 @@ export default function SecuritySettings() {
           >
             {passwordLoading ? (
               <>
-                <Spinner size="sm" className="me-2" />
-                Updating...
+                <span className="skeleton-line skeleton-inline me-2" style={{ width: '60px', height: '12px' }} />
+                <span>Updating...</span>
               </>
             ) : (
               'Update Password'
@@ -270,7 +270,7 @@ export default function SecuritySettings() {
               disabled={twoFactorLoading}
             >
               {twoFactorLoading ? (
-                <Spinner size="sm" />
+                <span className="skeleton-line skeleton-inline" style={{ width: '40px', height: '12px' }} />
               ) : (
                 twoFactorEnabled ? 'Disable' : 'Enable'
               )}
@@ -286,7 +286,11 @@ export default function SecuritySettings() {
 
           {sessionsLoading ? (
             <div className="text-center py-4">
-              <Spinner color="primary" />
+              <div className="skeleton-wrapper">
+                <div className="skeleton-line" style={{ width: '55%' }} />
+                <div className="skeleton-line" style={{ width: '80%' }} />
+                <div className="skeleton-line" style={{ width: '65%' }} />
+              </div>
             </div>
           ) : sessions.length === 0 ? (
             <p className="text-muted">No active sessions found</p>
@@ -325,7 +329,7 @@ export default function SecuritySettings() {
                       disabled={terminating === session.id}
                     >
                       {terminating === session.id ? (
-                        <Spinner size="sm" />
+                        <span className="skeleton-line skeleton-inline" style={{ width: '50px', height: '12px' }} />
                       ) : (
                         'Terminate'
                       )}

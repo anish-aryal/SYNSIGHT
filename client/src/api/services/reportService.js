@@ -30,11 +30,17 @@ export const downloadReportPdf = async (id) => {
   return response;
 };
 
+export const updateReportProject = async (id, projectId) => {
+  const response = await api.patch(`/reports/${id}/project`, { projectId });
+  return response.data;
+};
+
 export default {
   generateReport,
   getReports,
   getReportById,
   getReportByAnalysisId,
   deleteReport,
-  downloadReportPdf
+  downloadReportPdf,
+  updateReportProject
 };

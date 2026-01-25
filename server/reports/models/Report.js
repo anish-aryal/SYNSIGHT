@@ -34,6 +34,11 @@ const reportSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project',
+    required: false
+  },
   usage: {
     prompt_tokens: Number,
     completion_tokens: Number,
@@ -52,6 +57,7 @@ const reportSchema = new mongoose.Schema({
 reportSchema.index({ user: 1, createdAt: -1 });
 reportSchema.index({ user: 1, query: 1 });
 reportSchema.index({ user: 1, analysis: 1 }, { unique: true, sparse: true });
+reportSchema.index({ user: 1, project: 1 });
 
 
 export default mongoose.model('Report', reportSchema);

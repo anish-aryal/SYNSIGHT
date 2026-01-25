@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Spinner } from 'reactstrap';
+import { Button } from 'reactstrap';
 import { 
   Share2, 
   FolderPlus, 
@@ -8,8 +8,11 @@ import {
   Eye
 } from 'lucide-react';
 import { useApp } from '../../../api/context/AppContext';
+import * as analysisService from '../../../api/services/analysisService';
 import reportService from '../../../api/services/reportService';
+import projectService from '../../../api/services/projectService';
 import ReportModal from './ReportModal';
+import ProjectPickerModal from '../../../components/projects/ProjectPickerModal';
 
 export default function ActionBar({ query, results, onCompare, onRefresh }) {
   const { showSuccess, showError } = useApp();
@@ -20,6 +23,10 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
   const [report, setReport] = useState(null);
   const [existingReport, setExistingReport] = useState(null);
   const [error, setError] = useState(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsSaving, setProjectsSaving] = useState(false);
 
   const analysisId = results?.analysisId || results?._id;
 
@@ -110,7 +117,68 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
   };
 
   const handleSaveToProject = () => {
-    console.log('Save to project');
+    if (!analysisId) {
+      showError('No analysis available to save');
+      return;
+    }
+    setIsProjectModalOpen(true);
+  };
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!isProjectModalOpen) return;
+      setProjectsLoading(true);
+      try {
+        const response = await projectService.getProjects();
+        if (response?.success) {
+          setProjects(Array.isArray(response.data) ? response.data : []);
+        } else {
+          showError(response?.message || 'Failed to load projects');
+        }
+      } catch (err) {
+        const message = err.response?.data?.message || err.message || 'Failed to load projects';
+        showError(message);
+      } finally {
+        setProjectsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [isProjectModalOpen, showError]);
+
+  const handleAssignProject = async (projectId) => {
+    if (!analysisId) return;
+    setProjectsSaving(true);
+    try {
+      const response = await analysisService.updateAnalysisProject(analysisId, projectId);
+      if (response?.success) {
+        showSuccess('Analysis saved to project');
+        setIsProjectModalOpen(false);
+      } else {
+        showError(response?.message || 'Failed to save to project');
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to save to project';
+      showError(message);
+    } finally {
+      setProjectsSaving(false);
+    }
+  };
+
+  const handleCreateAndAssign = async (payload) => {
+    setProjectsSaving(true);
+    try {
+      const created = await projectService.createProject(payload);
+      if (!created?.success || !created.data?._id) {
+        throw new Error(created?.message || 'Failed to create project');
+      }
+
+      await handleAssignProject(created.data._id);
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to create project';
+      showError(message);
+      setProjectsSaving(false);
+    }
   };
 
   const handleCompare = () => {
@@ -169,7 +237,7 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
             className="gradient-primary action-btn-primary d-flex align-items-center gap-2 ms-auto"
             disabled
           >
-            <Spinner size="sm" />
+            <span className="skeleton-line skeleton-inline" style={{ width: '70px', height: '12px' }} />
             <span>Checking...</span>
           </Button>
         ) : hasExistingReport ? (
@@ -201,6 +269,17 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
         report={report}
         error={error}
         onDownload={handleDownload}
+      />
+
+      <ProjectPickerModal
+        isOpen={isProjectModalOpen}
+        toggle={() => setIsProjectModalOpen(false)}
+        projects={projects}
+        isLoading={projectsLoading}
+        isSaving={projectsSaving}
+        onAssign={handleAssignProject}
+        onCreateAndAssign={handleCreateAndAssign}
+        title="Save analysis to project"
       />
     </>
   );

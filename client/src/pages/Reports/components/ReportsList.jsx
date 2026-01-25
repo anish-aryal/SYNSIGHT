@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, CardBody, Button, InputGroup, Input, Spinner } from 'reactstrap';
-import { Calendar, Eye, Download, Search, Trash2 } from 'lucide-react';
+import { Card, CardBody, Button, InputGroup, Input } from 'reactstrap';
+import { Calendar, Eye, Download, Search, Trash2, FolderPlus } from 'lucide-react';
 
 export default function ReportsList({
   reports,
@@ -9,6 +9,7 @@ export default function ReportsList({
   onViewReport,
   onDownloadReport,
   onDeleteReport,
+  onAssignProject,
   viewingReportId,
   downloadingReportId,
   deletingReportId
@@ -100,6 +101,7 @@ export default function ReportsList({
               const isViewing = viewingReportId === reportId;
               const isDownloading = downloadingReportId === reportId;
               const isDeleting = deletingReportId === reportId;
+              const projectName = report?.project?.name;
               
               return (
                 <div
@@ -113,6 +115,11 @@ export default function ReportsList({
                       <Calendar size={14} />
                       <span>{formatDate(report?.createdAt || report?.date)}</span>
                     </div>
+                    {projectName ? (
+                      <div className="text-muted" style={{ fontSize: '12px' }}>
+                        Project: {projectName}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="d-flex align-items-center gap-3">
@@ -136,11 +143,23 @@ export default function ReportsList({
                     <div className="d-flex gap-2">
                       <Button
                         color="light"
+                        className="border-1 px-3"
+                        onClick={() => onAssignProject?.(report)}
+                        disabled={!reportId || isDeleting || isViewing || isDownloading}
+                      >
+                        <FolderPlus size={16} />
+                      </Button>
+                      <Button
+                        color="light"
                         className="border-1 d-flex align-items-center gap-2 px-3"
                         onClick={() => onViewReport?.(report)}
                         disabled={!reportId || isViewing || isDownloading || isDeleting}
                       >
-                        {isViewing ? <Spinner size="sm" /> : <Eye size={16} />}
+                        {isViewing ? (
+                          <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
                         <span>{isViewing ? 'Loading' : 'View'}</span>
                       </Button>
                       <Button
@@ -149,7 +168,11 @@ export default function ReportsList({
                         onClick={() => onDownloadReport?.(report)}
                         disabled={!reportId || isDownloading || isViewing || isDeleting}
                       >
-                        {isDownloading ? <Spinner size="sm" /> : <Download size={16} />}
+                        {isDownloading ? (
+                          <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
+                        ) : (
+                          <Download size={16} />
+                        )}
                       </Button>
                       <Button
                         color="light"
@@ -157,7 +180,11 @@ export default function ReportsList({
                         onClick={() => onDeleteReport?.(report)}
                         disabled={!reportId || isDeleting || isViewing || isDownloading}
                       >
-                        {isDeleting ? <Spinner size="sm" /> : <Trash2 size={16} />}
+                        {isDeleting ? (
+                          <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
                       </Button>
                     </div>
                   </div>

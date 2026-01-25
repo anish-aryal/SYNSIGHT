@@ -1,5 +1,6 @@
 import * as SentimentOrchestrator from '../services/orchestrator.js';
 import Analysis from '../models/Analysis.js';
+import Project from '../../projects/models/Project.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
 const buildOptions = (body = {}) => ({
@@ -95,6 +96,7 @@ export const analyzeTwitter = async (req, res) => {
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
       topKeywords: result.topKeywords,
+      sentimentOverTime: result.sentimentOverTime || result.sentiment_over_time || [],
       samplePosts: result.samplePosts,
       dateRange,
       metadata: { timestamp: result.timestamp, processingTime, options }
@@ -142,6 +144,7 @@ export const analyzeReddit = async (req, res) => {
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
       topKeywords: result.topKeywords,
+      sentimentOverTime: result.sentimentOverTime || result.sentiment_over_time || [],
       samplePosts: result.samplePosts,
       dateRange,
       metadata: { timestamp: result.timestamp, processingTime, options }
@@ -189,6 +192,7 @@ export const analyzeBluesky = async (req, res) => {
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
       topKeywords: result.topKeywords,
+      sentimentOverTime: result.sentimentOverTime || result.sentiment_over_time || [],
       samplePosts: result.samplePosts,
       dateRange,
       metadata: { timestamp: result.timestamp, processingTime, options }
@@ -238,6 +242,7 @@ export const analyzeMultiPlatform = async (req, res) => {
       insights: result.insights,
       platformBreakdown: result.platformBreakdown,
       topKeywords: result.topKeywords,
+      sentimentOverTime: result.sentimentOverTime || result.sentiment_over_time || [],
       samplePosts: result.samplePosts,
       dateRange,
       metadata: { timestamp: result.timestamp, processingTime, options }
@@ -333,5 +338,157 @@ export const deleteAnalysis = async (req, res) => {
     return sendSuccessResponse(res, 'Analysis deleted successfully');
   } catch (error) {
     return sendErrorResponse(res, error.message || 'Failed to delete analysis', 500);
+  }
+};
+
+export const updateAnalysisProject = async (req, res) => {
+  try {
+    const { projectId } = req.body;
+
+    let project = null;
+    if (projectId) {
+      project = await Project.findOne({
+        _id: projectId,
+        user: req.user._id,
+        status: { $ne: 'deleted' }
+      });
+
+      if (!project) {
+        return sendErrorResponse(res, 'Project not found', 404);
+      }
+    }
+
+    const analysis = await Analysis.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
+      { project: project ? project._id : null },
+      { new: true }
+    );
+
+    if (!analysis) {
+      return sendErrorResponse(res, 'Analysis not found', 404);
+    }
+
+    if (project) {
+      await Project.findByIdAndUpdate(project._id, { lastActivityAt: new Date() });
+    }
+
+    return sendSuccessResponse(res, 'Analysis updated successfully', analysis);
+  } catch (error) {
+    console.error('Update analysis project error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to update analysis', 500);
+  }
+};
+
+export const refreshAnalysis = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { timeframe, platforms, language, maxResults = 100 } = req.body || {};
+
+    const analysis = await Analysis.findOne({
+      _id: id,
+      user: req.user._id
+    });
+
+    if (!analysis) {
+      return sendErrorResponse(res, 'Analysis not found', 404);
+    }
+
+    const query = analysis.query;
+    const platformSelections = platforms && typeof platforms === 'object' ? platforms : null;
+    const selectedPlatformIds = platformSelections
+      ? Object.keys(platformSelections).filter((key) => platformSelections[key])
+      : [];
+
+    const effectiveTimeframe = timeframe || 'last7days';
+    const effectiveLanguage = language || 'en';
+
+    const options = {
+      timeframe: effectiveTimeframe,
+      language: effectiveLanguage,
+      platforms: platformSelections || { twitter: true, reddit: true, bluesky: true }
+    };
+
+    const startTime = Date.now();
+    let result = null;
+    let source = analysis.source;
+
+    if (analysis.source === 'text') {
+      result = await SentimentOrchestrator.analyzeText(query);
+      source = 'text';
+    } else if (selectedPlatformIds.length === 1) {
+      const platform = selectedPlatformIds[0];
+      if (platform === 'twitter') {
+        result = await SentimentOrchestrator.analyzeTwitter(query, maxResults, options);
+      } else if (platform === 'reddit') {
+        result = await SentimentOrchestrator.analyzeReddit(query, maxResults, options);
+      } else if (platform === 'bluesky') {
+        result = await SentimentOrchestrator.analyzeBluesky(query, maxResults, options);
+      }
+      source = platform;
+    } else {
+      result = await SentimentOrchestrator.analyzeMultiplePlatforms(query, maxResults, options);
+      source = 'multi-platform';
+    }
+
+    if (!result) {
+      return sendErrorResponse(res, 'Failed to refresh analysis', 500);
+    }
+
+    const processingTime = Date.now() - startTime;
+    const dateRange = result.samplePosts ? buildDateRange(result.samplePosts) : null;
+
+    if (source === 'text') {
+      analysis.sentiment = {
+        overall: result.sentiment,
+        scores: result.scores,
+        percentages: {
+          positive: result.sentiment === 'positive' ? 100 : 0,
+          negative: result.sentiment === 'negative' ? 100 : 0,
+          neutral: result.sentiment === 'neutral' ? 100 : 0
+        }
+      };
+      analysis.totalAnalyzed = 1;
+      analysis.samplePosts = [{
+        text: query,
+        platform: 'text',
+        sentiment: result.sentiment,
+        confidence: Math.round(result.confidence * 100),
+        created_at: new Date()
+      }];
+      analysis.topKeywords = [];
+      analysis.platformBreakdown = [];
+      analysis.insights = {};
+      analysis.sentimentOverTime = [];
+      analysis.dateRange = null;
+    } else {
+      analysis.sentiment = {
+        overall: result.overall_sentiment,
+        scores: result.average_scores,
+        percentages: result.percentages,
+        distribution: result.sentiment_distribution
+      };
+      analysis.totalAnalyzed = result.total_analyzed;
+      analysis.insights = result.insights;
+      analysis.platformBreakdown = result.platformBreakdown;
+      analysis.topKeywords = result.topKeywords;
+      analysis.sentimentOverTime = result.sentimentOverTime || result.sentiment_over_time || [];
+      analysis.samplePosts = result.samplePosts;
+      analysis.dateRange = dateRange;
+    }
+
+    analysis.source = source;
+    analysis.metadata = {
+      timestamp: result.timestamp || new Date().toISOString(),
+      processingTime,
+      timeframe: effectiveTimeframe,
+      language: effectiveLanguage,
+      platforms: selectedPlatformIds.length > 0 ? selectedPlatformIds : ['twitter', 'reddit', 'bluesky']
+    };
+
+    const updated = await analysis.save();
+    return sendSuccessResponse(res, 'Analysis refreshed successfully', updated);
+  } catch (error) {
+    console.error('Refresh analysis error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to refresh analysis', 500);
   }
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, CardBody, Modal, ModalHeader, ModalBody, ModalFooter, Button, Spinner } from 'reactstrap';
+import { Container, Row, Col, Card, CardBody, Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 import { useChat } from '../../api/context/ChatContext';
 import { MessageSquare, Clock, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -142,8 +142,8 @@ export default function History() {
           <Button color="danger" onClick={confirmDelete} disabled={isDeleting}>
             {isDeleting ? (
               <>
-                <Spinner size="sm" className="me-2" />
-                Deleting...
+                <span className="skeleton-line skeleton-inline me-2" style={{ width: '60px', height: '12px' }} />
+                <span>Deleting...</span>
               </>
             ) : (
               'Delete'

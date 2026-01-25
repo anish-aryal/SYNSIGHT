@@ -9,6 +9,7 @@ import analysisRoutes from './sentimentAnalysis/routes/analysis.js';
 import trendingRoutes from './sentimentAnalysis/routes/trending.js';
 import chatRoutes from "./routes/chatRoutes.js"
 import reportRoutes from './reports/routes/reportRoutes.js';
+import projectRoutes from './projects/routes/projectRoutes.js';
 
 
 // Load env vars
@@ -34,6 +35,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/trending', trendingRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/projects', projectRoutes);
 
 
 // Health check route

@@ -13,6 +13,7 @@ import Explore from './pages/Explore/Explore';
 import Chat from './pages/Chat/Chat';
 import Reports from './pages/Reports/Reports';
 import Projects from './pages/Projects/Projects';
+import AnalysisDetailPage from './pages/Projects/AnalysisDetailPage';
 import Settings from './pages/Settings/Settings';
 import History from './pages/History/History';
 import Login from './pages/Auth/Login';
@@ -54,6 +55,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/chat/:chatId" element={<Chat />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<Projects />} />
+                <Route path="/projects/:projectId/analyses/:analysisId" element={<AnalysisDetailPage />} />
+                <Route path="/projects/analyses/:analysisId" element={<AnalysisDetailPage />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/history" element={<History />} />

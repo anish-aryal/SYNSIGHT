@@ -5,7 +5,6 @@ import {
   ModalBody,
   ModalFooter,
   Button,
-  Spinner,
   Row,
   Col
 } from 'reactstrap';
@@ -38,7 +37,11 @@ export default function ReportModal({
           <Row>
             <Col xs={12}>
               <div className="report-loading">
-                <Spinner color="primary" />
+                <div className="skeleton-wrapper">
+                  <div className="skeleton-line" style={{ width: '50%' }} />
+                  <div className="skeleton-line" style={{ width: '85%' }} />
+                  <div className="skeleton-line" style={{ width: '70%' }} />
+                </div>
                 <h5 className="mt-3 mb-2">{loadingTitle}</h5>
                 <p className="text-muted">
                   {loadingDescription}

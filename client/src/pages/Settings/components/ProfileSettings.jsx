@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardBody, CardFooter, Form, FormGroup, Label, Input, Button, Spinner } from 'reactstrap';
+import { Card, CardHeader, CardBody, CardFooter, Form, FormGroup, Label, Input, Button } from 'reactstrap';
 import { Camera } from 'lucide-react';
 import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
@@ -340,8 +340,8 @@ export default function ProfileSettings() {
           >
             {loading ? (
               <>
-                <Spinner size="sm" className="me-2" />
-                Saving...
+                <span className="skeleton-line skeleton-inline me-2" style={{ width: '60px', height: '12px' }} />
+                <span>Saving...</span>
               </>
             ) : (
               'Save Changes'
