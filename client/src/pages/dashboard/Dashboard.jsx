@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Col, Container, Row } from 'reactstrap';
 import { useNavigate } from 'react-router-dom';
-import { Folder, FileText, AlertCircle } from 'lucide-react';
+import { Folder, FileText, BarChart3 } from 'lucide-react';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import StatsCard from './components/StatsCard';
 import RecentProjects from './components/RecentProjects';
 import QuickActions from './components/QuickActions';
 import SystemStatus from './components/SystemStatus';
 import projectService from '../../api/services/projectService';
 import reportService from '../../api/services/reportService';
-import { getAnalysisHistory, getAnalysisStatistics } from '../../api/services/analysisService';
+import { getChatStats } from '../../api/services/chatService';
 import { useApp } from '../../api/context/AppContext';
 import { useAuth } from '../../api/context/AuthContext';
 
@@ -53,14 +54,12 @@ export default function Dashboard() {
 
   const [projects, setProjects] = useState([]);
   const [reports, setReports] = useState([]);
-  const [analysisStats, setAnalysisStats] = useState({ positive: 0, neutral: 0, negative: 0 });
-  const [analysisHistory, setAnalysisHistory] = useState([]);
+  const [chatStats, setChatStats] = useState({ totalAnalyses: 0, recentAnalyses: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [projectsError, setProjectsError] = useState(null);
   const [reportsError, setReportsError] = useState(null);
-  const [statsError, setStatsError] = useState(null);
-  const [historyError, setHistoryError] = useState(null);
+  const [chatStatsError, setChatStatsError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchDashboard = useCallback(async (showToast = false) => {
@@ -68,19 +67,17 @@ export default function Dashboard() {
     setFetchError(null);
     setProjectsError(null);
     setReportsError(null);
-    setStatsError(null);
-    setHistoryError(null);
+    setChatStatsError(null);
 
     const results = await Promise.allSettled([
       projectService.getProjects(),
       reportService.getReports(),
-      getAnalysisStatistics(),
-      getAnalysisHistory()
+      getChatStats()
     ]);
 
     const errors = [];
 
-    const [projectsResult, reportsResult, statsResult, historyResult] = results;
+    const [projectsResult, reportsResult, chatStatsResult] = results;
 
     if (projectsResult.status === 'fulfilled' && projectsResult.value?.success) {
       setProjects(Array.isArray(projectsResult.value.data) ? projectsResult.value.data : []);
@@ -98,21 +95,16 @@ export default function Dashboard() {
       errors.push(message);
     }
 
-    if (statsResult.status === 'fulfilled' && statsResult.value?.success) {
-      setAnalysisStats(statsResult.value.data || { positive: 0, neutral: 0, negative: 0 });
+    if (chatStatsResult.status === 'fulfilled' && chatStatsResult.value?.success) {
+      const data = chatStatsResult.value?.data || {};
+      setChatStats({
+        totalAnalyses: Number(data.totalAnalyses) || 0,
+        recentAnalyses: Number(data.recentAnalyses) || 0
+      });
     } else {
-      const message = statsResult?.reason?.message || statsResult?.value?.message || 'Failed to load sentiment stats';
-      setStatsError(message);
-      setAnalysisStats({ positive: 0, neutral: 0, negative: 0 });
-      errors.push(message);
-    }
-
-    if (historyResult.status === 'fulfilled' && historyResult.value?.success) {
-      setAnalysisHistory(Array.isArray(historyResult.value.data) ? historyResult.value.data : []);
-    } else {
-      const message = historyResult?.reason?.message || historyResult?.value?.message || 'Failed to load analysis history';
-      setHistoryError(message);
-      setAnalysisHistory([]);
+      const message = chatStatsResult?.reason?.message || chatStatsResult?.value?.message || 'Failed to load chat stats';
+      setChatStatsError(message);
+      setChatStats({ totalAnalyses: 0, recentAnalyses: 0 });
       errors.push(message);
     }
 
@@ -139,7 +131,7 @@ export default function Dashboard() {
 
   const reportsCount = reports.length;
 
-  const alertsCount = analysisStats?.negative || 0;
+  const analysesCount = chatStats?.totalAnalyses || 0;
 
   const newProjectsCount = useMemo(
     () => projects.filter((project) => isWithinDays(project?.createdAt, 7)).length,
@@ -151,14 +143,7 @@ export default function Dashboard() {
     [reports]
   );
 
-  const newAlertsCount = useMemo(
-    () => analysisHistory.filter((analysis) => {
-      const createdAt = analysis?.createdAt;
-      const sentiment = analysis?.sentiment?.overall;
-      return isWithinDays(createdAt, 7) && String(sentiment || '').toLowerCase() === 'negative';
-    }).length,
-    [analysisHistory]
-  );
+  const newAnalysesCount = chatStats?.recentAnalyses || 0;
 
   const stats = useMemo(() => ([
     {
@@ -176,13 +161,13 @@ export default function Dashboard() {
       color: 'purple'
     },
     {
-      icon: AlertCircle,
-      label: 'Alerts',
-      value: alertsCount,
-      change: `+${newAlertsCount}`,
+      icon: BarChart3,
+      label: 'Analyses',
+      value: analysesCount,
+      change: `+${newAnalysesCount}`,
       color: 'warning'
     }
-  ]), [activeProjectsCount, alertsCount, newAlertsCount, newProjectsCount, newReportsCount, reportsCount]);
+  ]), [activeProjectsCount, analysesCount, newAnalysesCount, newProjectsCount, newReportsCount, reportsCount]);
 
   const statusItems = useMemo(() => {
     const subscription = user?.subscription || {};
@@ -194,7 +179,7 @@ export default function Dashboard() {
     const refreshLabel = lastUpdated
       ? `Updated ${lastUpdated.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
       : 'Updating...';
-    const errorCount = [projectsError, reportsError, statsError, historyError].filter(Boolean).length;
+    const errorCount = [projectsError, reportsError, chatStatsError].filter(Boolean).length;
     const hasIssues = errorCount > 0;
 
     return [
@@ -224,7 +209,7 @@ export default function Dashboard() {
         status: 'normal'
       }
     ];
-  }, [historyError, isLoading, lastUpdated, projectsError, reportsError, statsError, user?.subscription]);
+  }, [chatStatsError, isLoading, lastUpdated, projectsError, reportsError, user?.subscription]);
 
   const handleQuickAction = (actionId) => {
     switch (actionId) {
@@ -246,17 +231,21 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="dashboard-page">
-      <Container className="mt-5">
+    <div className="syn-page dashboard-page">
+      <Container className="syn-page-container">
         <Row className="mb-4">
-          <Col className="d-flex justify-content-between align-items-start flex-wrap gap-3">
-            <div>
-              <h2 className="dashboard-title mb-1">Hi 👋 {getFirstName(user?.fullName)}</h2>
-              <p className="text-muted">Here is how your sentiment analysis is going</p>
+          <Col>
+            <div className="syn-page-hero">
+              <PageHeader
+                title={`Hi 👋 ${getFirstName(user?.fullName)}`}
+                subtitle="Here is how your sentiment analysis is going"
+                customActions={
+                  <Button color="link" className="dashboard-refresh-btn" onClick={() => fetchDashboard(true)}>
+                    Refresh
+                  </Button>
+                }
+              />
             </div>
-            <Button color="link" className="dashboard-refresh-btn" onClick={() => fetchDashboard(true)}>
-              Refresh
-            </Button>
           </Col>
         </Row>
 
@@ -297,11 +286,11 @@ export default function Dashboard() {
           </Col>
         </Row>
 
-        <Row>
+        <Row className="mb-4">
           <Col xs={12} lg={8} className="mb-3 mb-lg-0">
             <QuickActions onAction={handleQuickAction} />
           </Col>
-          <Col xs={12} lg={4}>
+          <Col xs={12} lg={4} className="mb-3 mb-lg-0">
             <SystemStatus items={statusItems} isLoading={isLoading} />
           </Col>
         </Row>

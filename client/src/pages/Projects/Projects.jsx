@@ -180,12 +180,12 @@ export default function Projects() {
   };
 
   return (
-    <div className="projects-page">
-      <Container className="projects-container">
+    <div className="syn-page projects-page">
+      <Container className="syn-page-container">
         <Row>
           <Col>
-            <div className="projects-hero">
-              <PageHeader 
+            <div className="syn-page-hero">
+              <PageHeader
                 title="Projects"
                 subtitle="Organize your queries and dashboards by workspace"
                 showSearch={true}
@@ -219,13 +219,10 @@ export default function Projects() {
                     </NavItem>
                   </Nav>
                 </div>
-                <div className="projects-meta">
-                  <span className="projects-count">{visibleProjects.length} projects</span>
-                </div>
               </div>
             </div>
 
-            <div className="projects-body">
+            <div className="syn-page-content">
               {isLoading ? (
                 <div className="projects-state projects-loading">
                   <div className="skeleton-wrapper">

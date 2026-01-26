@@ -301,15 +301,18 @@ export default function Reports() {
   };
 
   return (
-    <div className="reports-page">
-      <Container className="mt-5">
+    <div className="syn-page reports-page">
+      <Container className="syn-page-container">
         <Row>
           <Col>
-              <PageHeader 
+            <div className="syn-page-hero">
+              <PageHeader
                 title="Reports"
                 subtitle="Generate, schedule, and view sentiment analysis reports"
               />
+            </div>
 
+            <div className="syn-page-content">
             {isLoading ? (
               <div className="text-center py-5">
                 <div className="skeleton-wrapper">
@@ -341,6 +344,7 @@ export default function Reports() {
                 deletingReportId={deletingReportId}
               />
             )}
+            </div>
           </Col>
         </Row>
       </Container>

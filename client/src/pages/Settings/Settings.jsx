@@ -28,21 +28,23 @@ export default function Settings() {
   };
 
   return (
-    <div className="settings-page">
-      <Container className="mt-5">
+    <div className="syn-page settings-page">
+      <Container className="syn-page-container">
         <Row>
           <Col>
-            <PageHeader 
-              title="Settings"
-              subtitle="Manage your account settings and preferences"
-            />
-            
-            <SettingsTabs 
+            <div className="syn-page-hero">
+              <PageHeader
+                title="Settings"
+                subtitle="Manage your account settings and preferences"
+              />
+            </div>
+
+            <SettingsTabs
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             />
 
-            <div className="mt-4">
+            <div className="syn-page-content">
               {renderTabContent()}
             </div>
           </Col>

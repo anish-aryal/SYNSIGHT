@@ -12,17 +12,52 @@ import {
 import { 
   Sparkles, 
   ChevronDown,
-  FolderPlus,
   Plus,
   Globe,
   Twitter,
-  MessageSquareText,
-  CloudSun,
   Check
 } from 'lucide-react';
 import { useChat } from '../../../api/context/ChatContext';
 
-export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
+const RedditIcon = ({ size = 18, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="13" r="5" />
+    <circle cx="9.6" cy="13" r="0.9" fill="currentColor" stroke="none" />
+    <circle cx="14.4" cy="13" r="0.9" fill="currentColor" stroke="none" />
+    <path d="M10.5 15.6c.9.8 2.1.8 3 0" />
+    <path d="M15 9l2.2-1.6" />
+    <circle cx="18.2" cy="6.4" r="1" />
+  </svg>
+);
+
+const BlueskyIcon = ({ size = 18, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M12 12c-2.8-2.8-6.2-2.3-6.2.4 0 2.7 2.6 4.4 6.2 4.4" />
+    <path d="M12 12c2.8-2.8 6.2-2.3 6.2.4 0 2.7-2.6 4.4-6.2 4.4" />
+  </svg>
+);
+
+export default function ChatHeader({ onNewChat, isInitial }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { selectedPlatform, setSelectedPlatform } = useChat();
 
@@ -31,11 +66,12 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
   const platforms = [
     { id: 'all', name: 'All Platforms', icon: Globe, description: 'Search across all platforms', color: 'all' },
     { id: 'twitter', name: 'Twitter / X', icon: Twitter, description: 'Posts from X (Twitter)', color: 'twitter' },
-    { id: 'reddit', name: 'Reddit', icon: MessageSquareText, description: 'Reddit posts & comments', color: 'reddit' },
-    { id: 'bluesky', name: 'Bluesky', icon: CloudSun, description: 'Bluesky posts', color: 'bluesky' }
+    { id: 'reddit', name: 'Reddit', icon: RedditIcon, description: 'Reddit posts & comments', color: 'reddit' },
+    { id: 'bluesky', name: 'Bluesky', icon: BlueskyIcon, description: 'Bluesky posts', color: 'bluesky' }
   ];
 
   const currentPlatform = platforms.find(p => p.id === selectedPlatform) || platforms[0];
+  const PlatformIcon = currentPlatform?.icon || Globe;
 
   const handlePlatformSelect = (platformId) => setSelectedPlatform(platformId);
 
@@ -50,13 +86,14 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
               </div>
               <div className="chat-title-text">
                 <div className="chat-title-name">Sentiment Analysis Chat</div>
-                <div className="chat-title-subtitle">Ask anything about social media sentiment</div>
               </div>
             </div>
 
             <Dropdown isOpen={dropdownOpen} toggle={toggle}>
               <DropdownToggle tag="button" type="button" className="chat-platform-toggle">
-                <Globe size={14} />
+                <div className={`platform-icon-wrapper ${currentPlatform.color} chat-platform-icon`}>
+                  <PlatformIcon size={16} />
+                </div>
                 <span className="chat-platform-label">{currentPlatform.name}</span>
                 <ChevronDown
                   size={14}
@@ -107,29 +144,16 @@ export default function ChatHeader({ onNewChat, onSaveProject, isInitial }) {
         <Col className="text-end">
           <div className="d-flex justify-content-end align-items-center gap-2">
             {!isInitial && (
-              <>
-                <Button
-                  color="link"
-                  size="sm"
-                  className="chat-header-action chat-save-btn gradient-primary text-white"
-                  onClick={onSaveProject}
-                  disabled={!onSaveProject}
-                >
-                  <FolderPlus size={16} />
-                  <span>Save as Project</span>
-                </Button>
-
-                <Button
-                  outline
-                  color="dark"
-                  size="sm"
-                  className="chat-header-action chat-new-btn"
-                  onClick={onNewChat}
-                >
-                  <Plus size={16} />
-                  <span>New Chat</span>
-                </Button>
-              </>
+              <Button
+                outline
+                color="dark"
+                size="sm"
+                className="chat-header-action chat-new-btn"
+                onClick={onNewChat}
+              >
+                <Plus size={16} />
+                <span>New Chat</span>
+              </Button>
             )}
           </div>
         </Col>

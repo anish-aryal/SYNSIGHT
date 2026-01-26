@@ -170,31 +170,29 @@ export default function History() {
   };
 
   return (
-    <div className="history-page">
-      <Container className="history-container">
+    <div className="syn-page history-page">
+      <Container className="syn-page-container">
         <div className="history-layout">
-          <div className="history-header">
-            <Row>
-              <Col>
-                <div className="history-hero">
-                  <PageHeader
-                    title="Chat History"
-                    subtitle="View and manage your past conversations"
-                    showSearch={true}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    searchPlaceholder="Search chats..."
-                    showButton={true}
-                    buttonText="New Chat"
-                    onButtonClick={handleNewChat}
-                  />
-                  <div className="history-meta">
-                    <span className="history-count">{totalChats} chats</span>
-                  </div>
+          <Row>
+            <Col>
+              <div className="syn-page-hero">
+                <PageHeader
+                  title="Chat History"
+                  subtitle="View and manage your past conversations"
+                  showSearch={true}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  searchPlaceholder="Search chats..."
+                  showButton={true}
+                  buttonText="New Chat"
+                  onButtonClick={handleNewChat}
+                />
+                <div className="syn-page-meta">
+                  <span className="syn-page-count">{totalChats} chats</span>
                 </div>
-              </Col>
-            </Row>
-          </div>
+              </div>
+            </Col>
+          </Row>
 
           <div className="history-scroll-area">
             <Row>

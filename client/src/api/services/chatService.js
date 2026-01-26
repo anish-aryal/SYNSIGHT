@@ -10,6 +10,11 @@ export const getChats = async (page = 1, limit = 20, archived = false) => {
   return response.data;
 };
 
+export const getChatStats = async () => {
+  const response = await api.get('/chats/stats');
+  return response.data;
+};
+
 export const getChatById = async (chatId) => {
   const response = await api.get(`/chats/${chatId}`);
   return response.data;

@@ -27,37 +27,17 @@ export default function PageHeader({
       {(showSearch || showButton || customActions) && (
         <Col xs="auto" className="syn-page-header-actions">
           {showSearch ? (
-            <InputGroup style={{ width: 280 }}>
-              <Button
-                type="button"
-                className="syn-icon-btn"
-                style={{
-                  borderTopRightRadius: 0,
-                  borderBottomRightRadius: 0,
-                  border: "1px solid var(--syn-border)",
-                  background: "var(--syn-surface)",
-                }}
-                aria-label="Search"
-              >
+            <InputGroup className="syn-search">
+              <Button type="button" className="syn-search-btn" aria-label="Search">
                 <Search size={18} />
               </Button>
 
               <Input
                 type="text"
+                className="syn-search-input"
                 placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                style={{
-                  border: "1px solid var(--syn-border)",
-                  borderLeft: "none",
-                  borderTopRightRadius: "var(--syn-radius-btn)",
-                  borderBottomRightRadius: "var(--syn-radius-btn)",
-                  borderTopLeftRadius: 0,
-                  borderBottomLeftRadius: 0,
-                  background: "var(--syn-surface)",
-                  height: 36,
-                  fontSize: "14px",
-                }}
               />
             </InputGroup>
           ) : null}

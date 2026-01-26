@@ -9,7 +9,6 @@ import AnalysisResults from './components/AnalysisResults';
 import SkeletonLoader from './components/SkeletonLoader';
 import { Sparkles } from 'lucide-react';
 import { useChat } from '../../api/context/ChatContext';
-import { useApp } from '../../api/context/AppContext';
 
 export default function Chat() {
   const { chatId } = useParams();
@@ -31,8 +30,6 @@ export default function Chat() {
     setSelectedPlatform,
     setAnalysisOptions
   } = useChat();
-  const { showInfo } = useApp();
-
   const messagesEndRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const hasLoadedChat = useRef(false);
@@ -126,15 +123,11 @@ export default function Chat() {
     navigate('/chat');
   };
 
-  const handleSaveProject = () => {
-    showInfo('Save to project is coming soon.');
-  };
-
   // Initial State - Welcome Screen
   if (isInitialState) {
     return (
       <div className="chat-wrapper">
-        <ChatHeader onNewChat={handleNewChat} onSaveProject={handleSaveProject} isInitial />
+        <ChatHeader onNewChat={handleNewChat} isInitial />
 
         <div className="chat-main-area">
           <Container>
@@ -190,7 +183,7 @@ export default function Chat() {
   // Chat State - Messages
   return (
     <div className="chat-wrapper">
-      <ChatHeader onNewChat={handleNewChat} onSaveProject={handleSaveProject} />
+      <ChatHeader onNewChat={handleNewChat} />
 
       <div className="chat-messages-area">
         <Container fluid className="chat-shell">

@@ -96,6 +96,46 @@ export const getChats = async (req, res) => {
   }
 };
 
+// @desc    Get chat analysis stats for user
+// @route   GET /api/chats/stats
+// @access  Private
+export const getChatStats = async (req, res) => {
+  try {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [stats] = await Chat.aggregate([
+      { $match: { user: req.user._id } },
+      { $unwind: '$messages' },
+      { $match: { 'messages.type': 'ai' } },
+      {
+        $group: {
+          _id: null,
+          totalAnalyses: { $sum: 1 },
+          recentAnalyses: {
+            $sum: {
+              $cond: [{ $gte: ['$messages.timestamp', cutoff] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalAnalyses: stats?.totalAnalyses || 0,
+        recentAnalyses: stats?.recentAnalyses || 0
+      }
+    });
+  } catch (error) {
+    console.error('Get chat stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 // @desc    Get chat by analysis ID
 // @route   GET /api/chats/analysis/:analysisId
 // @access  Private

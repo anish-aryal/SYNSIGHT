@@ -53,15 +53,18 @@ export default function Explore() {
   };
 
   return (
-    <div className="explore-page">
-      <Container className="mt-5">
+    <div className="syn-page explore-page">
+      <Container className="syn-page-container">
         <Row>
           <Col>
-            <PageHeader
-              title="Trending Topics"
-              subtitle="Discover what's trending on Bluesky (last 24 hours) - Click any topic to analyze"
-            />
+            <div className="syn-page-hero">
+              <PageHeader
+                title="Trending Topics"
+                subtitle="Discover what's trending on Bluesky (last 24 hours) - Click any topic to analyze"
+              />
+            </div>
 
+            <div className="syn-page-content">
             {error && (
               <Alert color="danger" className="mt-3">
                 <strong>Error:</strong> {error}
@@ -156,6 +159,7 @@ export default function Explore() {
                 )}
               </div>
             )}
+            </div>
           </Col>
         </Row>
       </Container>
