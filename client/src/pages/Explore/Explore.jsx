@@ -4,7 +4,6 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import { getTrendingTopics } from '../../api/services/trendingService';
-import './Explore.css';
 
 export default function Explore() {
   const navigate = useNavigate();

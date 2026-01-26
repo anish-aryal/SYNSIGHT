@@ -10,7 +10,6 @@ import {
 } from 'reactstrap';
 import { FileText, Download, X, CheckCircle, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import './ReportModal.css';
 
 export default function ReportModal({
   isOpen,

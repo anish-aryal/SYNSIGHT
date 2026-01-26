@@ -3,7 +3,6 @@ import { Container, Row, Col, Card, CardBody, Button, Alert } from 'reactstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../api/context/AuthContext';
-import './Auth.css';
 
 export default function VerifyOTP() {
   const navigate = useNavigate();

@@ -6,7 +6,6 @@ import ProfileSettings from './components/ProfileSettings';
 import NotificationsSettings from './components/NotificationsSettings';
 import PreferencesSettings from './components/PreferenceSettings';
 import SecuritySettings from './components/SecuritySettings';
-import './Settings.css';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');

@@ -1,19 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Row, Col, Button, Modal, ModalHeader, ModalBody, ModalFooter, FormGroup, Label, Input } from 'reactstrap';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Container, Row, Col, Button, Modal, ModalHeader, ModalBody, ModalFooter, FormGroup, Label, Input, Nav, NavItem, NavLink } from 'reactstrap';
 import PageHeader from '../../components/PageHeader/PageHeader';
-import ProjectStats from './components/ProjectStats';
 import ProjectsGrid from './components/ProjectsGrid';
 import projectService from '../../api/services/projectService';
 import { useApp } from '../../api/context/AppContext';
 import ProjectDetail from './ProjectDetail';
-import './Projects.css';
 
 export default function Projects() {
   const { showError, showSuccess } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const { projectId } = useParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeView, setActiveView] = useState('all');
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [listError, setListError] = useState(null);
@@ -22,10 +22,12 @@ export default function Projects() {
   const [activeProject, setActiveProject] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
   const [formState, setFormState] = useState({
     name: '',
     description: '',
     category: '',
+    status: 'Active',
     isStarred: false
   });
 
@@ -67,47 +69,25 @@ export default function Projects() {
     )
   ), [projects, searchQuery]);
 
-  const totalProjects = projects.length;
-  const totalQueries = projects.reduce((sum, project) => sum + (project.analysisCount || 0), 0);
-  const totalReports = projects.reduce((sum, project) => sum + (project.reportCount || 0), 0);
-  const totalStarred = projects.filter((project) => project.isStarred).length;
+  const starredProjects = useMemo(
+    () => filteredProjects.filter((project) => project.isStarred),
+    [filteredProjects]
+  );
+  const visibleProjects = activeView === 'favorites' ? starredProjects : filteredProjects;
 
-  const statsData = [
-    {
-      id: 1,
-      label: 'Total Projects',
-      value: totalProjects,
-      icon: 'folder',
-      iconColor: '#3b82f6'
-    },
-    {
-      id: 2,
-      label: 'Total Queries',
-      value: totalQueries,
-      icon: 'chart',
-      iconColor: '#8b5cf6'
-    },
-    {
-      id: 3,
-      label: 'Starred',
-      value: totalStarred,
-      icon: 'star',
-      iconColor: '#f59e0b'
-    },
-    {
-      id: 4,
-      label: 'Reports',
-      value: totalReports,
-      icon: 'workspace',
-      iconColor: '#10b981'
-    }
-  ];
-
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
     setActiveProject(null);
-    setFormState({ name: '', description: '', category: '', isStarred: false });
+    setFormState({ name: '', description: '', category: '', status: 'Active', isStarred: false });
+    setFormErrors({});
     setIsModalOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.openCreate) {
+      openCreateModal();
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate, openCreateModal]);
 
   const openEditModal = (project) => {
     setActiveProject(project);
@@ -115,16 +95,20 @@ export default function Projects() {
       name: project?.name || '',
       description: project?.description || '',
       category: project?.category || '',
+      status: project?.status || 'Active',
       isStarred: Boolean(project?.isStarred)
     });
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
   const handleSaveProject = async () => {
-    if (!formState.name.trim()) {
-      showError('Project name is required');
-      return;
-    }
+    const nextErrors = {};
+    if (!formState.name.trim()) nextErrors.name = 'Project name is required.';
+    if (!formState.category) nextErrors.category = 'Please select a category.';
+    if (!formState.status) nextErrors.status = 'Please select a status.';
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     setIsSaving(true);
     try {
@@ -197,117 +181,197 @@ export default function Projects() {
 
   return (
     <div className="projects-page">
-      <Container className="mt-5">
+      <Container className="projects-container">
         <Row>
           <Col>
-            <PageHeader 
-              title="Projects"
-              subtitle="Organize your queries and dashboards by workspace"
-              showSearch={true}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              searchPlaceholder="Search projects..."
-              showButton={true}
-              buttonText="New Project"
-              onButtonClick={openCreateModal}
-            />
-            <ProjectStats stats={statsData} />
-
-            {isLoading ? (
-              <div className="text-center py-5">
-                <div className="skeleton-wrapper">
-                  <div className="skeleton-line" style={{ width: '40%' }} />
-                  <div className="skeleton-line" style={{ width: '85%' }} />
-                  <div className="skeleton-line" style={{ width: '70%' }} />
+            <div className="projects-hero">
+              <PageHeader 
+                title="Projects"
+                subtitle="Organize your queries and dashboards by workspace"
+                showSearch={true}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search projects..."
+                showButton={true}
+                buttonText="New Project"
+                onButtonClick={openCreateModal}
+              />
+              <div className="projects-hero-footer">
+                <div className="projects-tabs-wrapper">
+                  <Nav className="projects-tabs">
+                    <NavItem>
+                      <NavLink
+                        className={`projects-tab ${activeView === 'favorites' ? 'is-active' : ''}`}
+                        onClick={() => setActiveView('favorites')}
+                      >
+                        <span className="projects-tab-label">Favorites</span>
+                        <span className="projects-tab-count">{starredProjects.length}</span>
+                      </NavLink>
+                    </NavItem>
+                    <NavItem>
+                      <NavLink
+                        className={`projects-tab ${activeView === 'all' ? 'is-active' : ''}`}
+                        onClick={() => setActiveView('all')}
+                      >
+                        <span className="projects-tab-label">All</span>
+                        <span className="projects-tab-count">{filteredProjects.length}</span>
+                      </NavLink>
+                    </NavItem>
+                  </Nav>
+                </div>
+                <div className="projects-meta">
+                  <span className="projects-count">{visibleProjects.length} projects</span>
                 </div>
               </div>
-            ) : listError ? (
-              <div className="text-center py-5">
-                <p className="text-danger mb-3">{listError}</p>
-                <Button color="primary" onClick={fetchProjects}>
-                  Try Again
-                </Button>
-              </div>
-            ) : (
-              <ProjectsGrid
-                projects={filteredProjects}
-                onToggleStar={handleToggleStar}
-                onEdit={openEditModal}
-                onDelete={(project) => {
-                  setActiveProject(project);
-                  setIsDeleteOpen(true);
-                }}
-                onOpen={(project) => {
-                  if (project?._id) {
-                    setActiveProjectId(project._id);
-                    navigate(`/projects/${project._id}`);
+            </div>
+
+            <div className="projects-body">
+              {isLoading ? (
+                <div className="projects-state projects-loading">
+                  <div className="skeleton-wrapper">
+                    <div className="skeleton-line" style={{ width: '40%' }} />
+                    <div className="skeleton-line" style={{ width: '85%' }} />
+                    <div className="skeleton-line" style={{ width: '70%' }} />
+                  </div>
+                </div>
+              ) : listError ? (
+                <div className="projects-state projects-error">
+                  <p className="projects-error-text">{listError}</p>
+                  <Button className="projects-retry-btn" color="primary" onClick={fetchProjects}>
+                    Try Again
+                  </Button>
+                </div>
+              ) : (
+                <ProjectsGrid
+                  projects={visibleProjects}
+                  title={activeView === 'favorites' ? 'Favorite Projects' : 'All Projects'}
+                  emptyMessage={
+                    activeView === 'favorites'
+                      ? 'No starred projects yet'
+                      : 'No projects found'
                   }
-                }}
-              />
-            )}
+                  onToggleStar={handleToggleStar}
+                  onEdit={openEditModal}
+                  onDelete={(project) => {
+                    setActiveProject(project);
+                    setIsDeleteOpen(true);
+                  }}
+                  onOpen={(project) => {
+                    if (project?._id) {
+                      setActiveProjectId(project._id);
+                      navigate(`/projects/${project._id}`);
+                    }
+                  }}
+                />
+              )}
+            </div>
           </Col>
         </Row>
       </Container>
 
-      <Modal isOpen={isModalOpen} toggle={() => setIsModalOpen(false)} centered>
-        <ModalHeader toggle={() => setIsModalOpen(false)}>
-          {activeProject ? 'Edit Project' : 'New Project'}
-        </ModalHeader>
-        <ModalBody>
-          <FormGroup>
-            <Label for="project-name-input">Project name</Label>
-            <Input
-              id="project-name-input"
-              value={formState.name}
-              onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter a project name"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label for="project-description-input">Description</Label>
-            <Input
-              id="project-description-input"
-              type="textarea"
-              rows="3"
-              value={formState.description}
-              onChange={(e) => setFormState((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Optional description"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label for="project-category-input">Category</Label>
-            <Input
-              id="project-category-input"
-              value={formState.category}
-              onChange={(e) => setFormState((prev) => ({ ...prev, category: e.target.value }))}
-              placeholder="Marketing, Research, Product..."
-            />
-          </FormGroup>
-          <FormGroup check>
-            <Input
-              id="project-starred-input"
-              type="checkbox"
-              checked={formState.isStarred}
-              onChange={(e) => setFormState((prev) => ({ ...prev, isStarred: e.target.checked }))}
-            />
-            <Label for="project-starred-input" check>
-              Star this project
-            </Label>
-          </FormGroup>
-        </ModalBody>
-        <ModalFooter>
-          <Button color="light" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button color="primary" onClick={handleSaveProject} disabled={isSaving}>
-            {isSaving ? (
-              <span className="skeleton-line skeleton-inline" style={{ width: '44px', height: '12px' }} />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <div className={`project-form-modal ${isModalOpen ? 'is-open' : ''}`}>
+        <div className="project-form-backdrop" onClick={() => setIsModalOpen(false)} />
+        <div className="project-form-sheet">
+          <div className="project-form-header">
+            <h4 className="project-form-title">{activeProject ? 'Edit Project' : 'New Project'}</h4>
+            <button
+              type="button"
+              className="project-form-close"
+              onClick={() => setIsModalOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="project-form-body">
+            <div className="project-form-grid project-form-grid-top">
+              <FormGroup>
+                <Label for="project-name-input">Project name</Label>
+                <Input
+                  id="project-name-input"
+                  value={formState.name}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter a project name"
+                  invalid={Boolean(formErrors.name)}
+                />
+                {formErrors.name ? <div className="project-form-error">{formErrors.name}</div> : null}
+              </FormGroup>
+              <FormGroup>
+                <Label for="project-starred-input">Add to favourite</Label>
+                <Input
+                  id="project-starred-input"
+                  type="select"
+                  value={formState.isStarred ? 'yes' : 'no'}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, isStarred: e.target.value === 'yes' }))}
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </Input>
+              </FormGroup>
+            </div>
+            <div className="project-form-grid">
+              <FormGroup>
+                <Label for="project-category-input">Category</Label>
+                <Input
+                  id="project-category-input"
+                  type="select"
+                  value={formState.category}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, category: e.target.value }))}
+                  invalid={Boolean(formErrors.category)}
+                >
+                  <option value="">Select a category</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Research">Research</option>
+                  <option value="Product">Product</option>
+                  <option value="Customer Success">Customer Success</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Other">Other</option>
+                </Input>
+                {formErrors.category ? <div className="project-form-error">{formErrors.category}</div> : null}
+              </FormGroup>
+              <FormGroup>
+                <Label for="project-status-input">Status</Label>
+                <Input
+                  id="project-status-input"
+                  type="select"
+                  value={formState.status}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, status: e.target.value }))}
+                  invalid={Boolean(formErrors.status)}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Paused">Paused</option>
+                  <option value="Completed">Completed</option>
+                </Input>
+                {formErrors.status ? <div className="project-form-error">{formErrors.status}</div> : null}
+              </FormGroup>
+            </div>
+            <FormGroup>
+              <Label for="project-description-input">Description</Label>
+              <Input
+                id="project-description-input"
+                type="textarea"
+                rows="6"
+                value={formState.description}
+                onChange={(e) => setFormState((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Optional description"
+              />
+            </FormGroup>
+          </div>
+          <div className="project-form-footer">
+            <Button color="light" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button color="primary" className="project-form-save" onClick={handleSaveProject} disabled={isSaving}>
+              {isSaving ? (
+                <span className="skeleton-line skeleton-inline" style={{ width: '44px', height: '12px' }} />
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <Modal isOpen={isDeleteOpen} toggle={() => setIsDeleteOpen(false)} centered>
         <ModalHeader toggle={() => setIsDeleteOpen(false)}>Delete Project</ModalHeader>

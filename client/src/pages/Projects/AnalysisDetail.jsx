@@ -37,8 +37,6 @@ import TopKeywordsChart from '../Chat/components/TopKeywordsChart';
 import SamplePostsList from '../Chat/components/SamplePostsList';
 import KeyInsightsCard from '../Chat/components/KeyInsightsCard';
 import SentimentTabs from '../Chat/components/SentimentTabs';
-import '../Chat/components/AnalysisResults.css';
-import './AnalysisDetail.css';
 
 const formatDate = (value) => {
   if (!value) return 'Unknown date';

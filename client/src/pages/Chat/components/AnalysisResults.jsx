@@ -7,7 +7,6 @@ import SentimentOverTimeChart from './SentimentOverTimeChart';
 import TopKeywordsChart from './TopKeywordsChart';
 import SamplePostsList from './SamplePostsList';
 import ActionBar from './ActionBar';
-import './AnalysisResults.css';
 
 const normalizeResults = (results = {}) => {
   const normalized = { ...results };

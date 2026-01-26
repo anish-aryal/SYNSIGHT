@@ -38,6 +38,8 @@ export const createChat = async (req, res) => {
 export const getChats = async (req, res) => {
   try {
     const { page = 1, limit = 20, archived = false } = req.query;
+    const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNumber = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
 
     const query = { 
       user: req.user._id,
@@ -47,14 +49,18 @@ export const getChats = async (req, res) => {
     const chats = await Chat.find(query)
       .select('title platform updatedAt createdAt isPinned messages')
       .sort({ isPinned: -1, updatedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((pageNumber - 1) * limitNumber)
+      .limit(limitNumber)
       .lean();
 
     const total = await Chat.countDocuments(query);
 
     const transformedChats = chats.map(chat => {
       const lastUserMessage = [...chat.messages].reverse().find(m => m.type === 'user');
+      const analysisPreviews = chat.messages
+        .filter(m => m.type === 'user' && typeof m.content === 'string')
+        .map(m => m.content.trim())
+        .filter(Boolean);
       return {
         _id: chat._id,
         title: chat.title,
@@ -62,6 +68,7 @@ export const getChats = async (req, res) => {
         messageCount: chat.messages.length,
         analysisCount: chat.messages.filter(m => m.type === 'ai').length,
         preview: lastUserMessage?.content || null,
+        analysisPreviews,
         isPinned: chat.isPinned,
         updatedAt: chat.updatedAt,
         createdAt: chat.createdAt
@@ -73,16 +80,57 @@ export const getChats = async (req, res) => {
       data: {
         chats: transformedChats,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: pageNumber,
+          limit: limitNumber,
           total,
-          pages: Math.ceil(total / limit)
+          pages: Math.ceil(total / limitNumber)
         }
       }
     });
   } catch (error) {
     console.error('Get chats error:', error);
     res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Get chat by analysis ID
+// @route   GET /api/chats/analysis/:analysisId
+// @access  Private
+export const getChatByAnalysisId = async (req, res) => {
+  try {
+    const { analysisId } = req.params;
+    if (!analysisId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Analysis ID is required'
+      });
+    }
+
+    const chat = await Chat.findOne({
+      user: req.user._id,
+      'messages.analysisId': analysisId
+    })
+      .sort({ updatedAt: -1 })
+      .select('_id')
+      .lean();
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found for this analysis'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: { _id: chat._id }
+    });
+  } catch (error) {
+    console.error('Get chat by analysis error:', error);
+    return res.status(500).json({
       success: false,
       message: error.message
     });

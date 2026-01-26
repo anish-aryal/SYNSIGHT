@@ -310,7 +310,7 @@ export default function DesignSystemPage() {
               <div style={{ borderTop: "1px solid var(--syn-divider)", margin: "16px 0" }} />
 
               <div style={{ fontSize: "0.875rem", color: "var(--syn-text-muted)" }}>
-                This page should look consistent with Dashboard, Explore, Projects, and Data Sources.
+                This page should look consistent with Dashboard, Explore, and Projects.
               </div>
             </CardBody>
           </Card>
@@ -543,7 +543,7 @@ export default function DesignSystemPage() {
                   </TabPane>
 
                   <TabPane tabId="progress">
-                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Progress (Data Sources usage)</div>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Progress</div>
 
                     <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
                       <div>
@@ -577,7 +577,7 @@ export default function DesignSystemPage() {
                   </TabPane>
 
                   <TabPane tabId="switch">
-                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Switch (Data Sources)</div>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Switch</div>
 
                     <FormGroup switch style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <Input
@@ -642,7 +642,6 @@ export default function DesignSystemPage() {
                   {[
                     { id: "dashboard", label: "Dashboard" },
                     { id: "explore", label: "Explore" },
-                    { id: "datasources", label: "Data Sources" },
                   ].map((t) => (
                     <NavItem key={t.id}>
                       <NavLink
@@ -706,39 +705,6 @@ export default function DesignSystemPage() {
                     </div>
                   </TabPane>
 
-                  <TabPane tabId="datasources">
-                    <Card>
-                      <CardBody>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>Twitter / X</div>
-                            <div style={{ fontSize: "0.875rem", color: "var(--syn-text-muted)", marginTop: 2 }}>
-                              API status and usage
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <Badge pill color="success">Active</Badge>
-                            <Button color="primary" size="sm">Connect</Button>
-                          </div>
-                        </div>
-
-                        <div style={{ marginTop: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                            <div style={{ fontSize: "0.875rem", fontWeight: 600 }}>Usage</div>
-                            <div style={{ fontSize: "0.875rem", color: "var(--syn-text-muted)" }}>72%</div>
-                          </div>
-                          <Progress value={72} className="mt-2" />
-                        </div>
-
-                        <div style={{ marginTop: 12 }}>
-                          <FormGroup switch style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 0 }}>
-                            <Input type="switch" checked={connected} onChange={(e) => setConnected(e.target.checked)} />
-                            <Label check style={{ margin: 0 }}>Connected</Label>
-                          </FormGroup>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </TabPane>
                 </TabContent>
               </CardBody>
             </Card>

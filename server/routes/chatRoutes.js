@@ -3,6 +3,7 @@ import { protect } from '../middlewares/auth.js';
 import {
   createChat,
   getChats,
+  getChatByAnalysisId,
   getChatById,
   addMessage,
   updateChat,
@@ -19,6 +20,8 @@ router.use(protect);
 router.route('/')
   .get(getChats)
   .post(createChat);
+
+router.get('/analysis/:analysisId', getChatByAnalysisId);
 
 router.route('/:id')
   .get(getChatById)

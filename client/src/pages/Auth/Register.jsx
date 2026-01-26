@@ -3,7 +3,6 @@ import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button, Alert
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLeftPanel from './components/AuthLeftPanel';
 import SocialLoginButtons from './components/SocialLoginButtons';
-import './Auth.css';
 
 export default function Register() {
   const navigate = useNavigate();

@@ -2,13 +2,8 @@ import React from 'react';
 import { Card, CardBody } from 'reactstrap';
 import { AlertCircle } from 'lucide-react';
 
-export default function SystemStatus() {
-  const statusItems = [
-    { label: 'API Status', value: 'Operational', status: 'success' },
-    { label: 'Data Processing', value: 'Normal', status: 'success' },
-    { label: 'Rate Limit', value: '8.4K / 10K', status: 'normal' },
-    { label: 'Subscription Ending on', value: '21 Days', status: 'normal' }
-  ];
+export default function SystemStatus({ items = [], isLoading = false }) {
+  const statusItems = Array.isArray(items) ? items : [];
 
   return (
     <Card className="h-100">
@@ -19,14 +14,25 @@ export default function SystemStatus() {
         </div>
         
         <div className="status-list">
-          {statusItems.map((item, idx) => (
-            <div key={idx} className="status-item d-flex justify-content-between align-items-center mb-3">
-              <span className="text-muted small">{item.label}</span>
-              <span className={`fw-medium small status-${item.status}`}>
-                {item.value}
-              </span>
+          {isLoading ? (
+            <div className="dashboard-skeleton">
+              {Array.from({ length: statusItems.length || 4 }).map((_, idx) => (
+                <div key={`status-skeleton-${idx}`} className="status-item d-flex justify-content-between align-items-center mb-3">
+                  <div className="skeleton-line" style={{ width: '45%' }} />
+                  <div className="skeleton-line skeleton-inline" style={{ width: '30%' }} />
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            statusItems.map((item, idx) => (
+              <div key={idx} className="status-item d-flex justify-content-between align-items-center mb-3">
+                <span className="text-muted small">{item.label}</span>
+                <span className={`fw-medium small status-${item.status}`}>
+                  {item.value}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </CardBody>
     </Card>

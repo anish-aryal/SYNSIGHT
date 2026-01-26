@@ -50,3 +50,13 @@ export const refreshAnalysis = async (analysisId, payload) => {
   const response = await api.post(`/analysis/${analysisId}/refresh`, payload);
   return response.data;
 };
+
+export const getAnalysisHistory = async () => {
+  const response = await api.get('/analysis/history');
+  return response.data;
+};
+
+export const getAnalysisStatistics = async () => {
+  const response = await api.get('/analysis/statistics');
+  return response.data;
+};

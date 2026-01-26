@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -27,6 +28,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useApp } from '../../api/context/AppContext';
+import * as chatService from '../../api/services/chatService';
 import projectService from '../../api/services/projectService';
 import * as analysisService from '../../api/services/analysisService';
 import reportService from '../../api/services/reportService';
@@ -113,6 +115,7 @@ const formatSourceLabel = (value) => {
 
 export default function ProjectDetail({ projectId, onClose }) {
   const { showError, showSuccess } = useApp();
+  const navigate = useNavigate();
   const closeTimerRef = useRef(null);
 
   const [project, setProject] = useState(null);
@@ -130,6 +133,7 @@ export default function ProjectDetail({ projectId, onClose }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeAnalysisId, setActiveAnalysisId] = useState(null);
+  const [redirectingAnalysisId, setRedirectingAnalysisId] = useState(null);
 
   const totalPosts = useMemo(
     () => analyses.reduce((sum, item) => sum + (Number(item.totalAnalyzed) || 0), 0),
@@ -314,6 +318,24 @@ export default function ProjectDetail({ projectId, onClose }) {
   const handleViewAnalysis = (analysisId) => {
     if (!analysisId) return;
     setActiveAnalysisId(analysisId);
+  };
+
+  const handleGoToChat = async (analysisId) => {
+    if (!analysisId) return;
+    setRedirectingAnalysisId(analysisId);
+    try {
+      const response = await chatService.getChatByAnalysisId(analysisId);
+      const chatId = response?.data?._id;
+      if (!response?.success || !chatId) {
+        throw new Error(response?.message || 'Chat not found for this analysis');
+      }
+      navigate(`/chat/${chatId}`);
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Unable to open chat';
+      showError(message);
+    } finally {
+      setRedirectingAnalysisId(null);
+    }
   };
 
   const handleCloseAnalysis = () => {
@@ -635,10 +657,11 @@ export default function ProjectDetail({ projectId, onClose }) {
                                       className="analysis-card-view-btn"
                                       onClick={(event) => {
                                         event.stopPropagation();
-                                        handleViewAnalysis(analysis._id);
+                                        handleGoToChat(analysis._id);
                                       }}
+                                      disabled={redirectingAnalysisId === analysis._id}
                                     >
-                                      View Details
+                                      {redirectingAnalysisId === analysis._id ? 'Opening...' : 'Go to chat'}
                                     </Button>
                                     <Button
                                       color="light"

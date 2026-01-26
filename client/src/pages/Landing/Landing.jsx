@@ -5,7 +5,6 @@ import HeroSection from './components/HeroSection';
 import FeaturesSection from './components/FeaturesSection';
 import CTASection from './components/CTASection';
 import Footer from './components/Footer';
-import './Landing.css';
 
 export default function Landing() {
   return (

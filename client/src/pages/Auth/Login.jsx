@@ -5,7 +5,6 @@ import { useAuth } from '../../api/context/AuthContext';
 import { useApp } from '../../api/context/AppContext';
 import AuthLeftPanel from './components/AuthLeftPanel';
 import SocialLoginButtons from './components/SocialLoginButtons';
-import './Auth.css';
 
 export default function Login() {
   const navigate = useNavigate();

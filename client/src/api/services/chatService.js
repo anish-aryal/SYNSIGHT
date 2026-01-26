@@ -15,6 +15,11 @@ export const getChatById = async (chatId) => {
   return response.data;
 };
 
+export const getChatByAnalysisId = async (analysisId) => {
+  const response = await api.get(`/chats/analysis/${analysisId}`);
+  return response.data;
+};
+
 export const addMessage = async (chatId, messageData) => {
   const response = await api.post(`/chats/${chatId}/messages`, messageData);
   return response.data;

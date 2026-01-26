@@ -10,7 +10,6 @@ import SkeletonLoader from './components/SkeletonLoader';
 import { Sparkles } from 'lucide-react';
 import { useChat } from '../../api/context/ChatContext';
 import { useApp } from '../../api/context/AppContext';
-import './Chat.css';
 
 export default function Chat() {
   const { chatId } = useParams();

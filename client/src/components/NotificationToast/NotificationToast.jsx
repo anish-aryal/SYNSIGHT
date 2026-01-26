@@ -1,7 +1,6 @@
 import React from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../api/context/AppContext';
-import './NotificationToast.css';
 
 export default function NotificationToast() {
   const { notifications, removeNotification } = useApp();

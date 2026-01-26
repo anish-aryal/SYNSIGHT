@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardBody, Button, Row, Col, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from 'reactstrap';
+import React, { useState } from 'react';
+import { Card, CardBody, Button, Row, Col, Dropdown, DropdownToggle, DropdownMenu, DropdownItem } from 'reactstrap';
 import { BarChart2, Star, MoreVertical, FileText, Folder } from 'lucide-react';
 
 const formatDate = (value) => {
@@ -25,36 +25,93 @@ const formatRelativeTime = (value) => {
   return `Updated ${weeks} week${weeks === 1 ? '' : 's'} ago`;
 };
 
-export default function ProjectsGrid({ projects, onToggleStar, onEdit, onDelete, onOpen }) {
+export default function ProjectsGrid({
+  projects,
+  onToggleStar,
+  onEdit,
+  onDelete,
+  onOpen,
+  title = 'All Projects',
+  emptyMessage = 'No projects found'
+}) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h5 className="fw-semibold mb-0">All Projects</h5>
-        <span className="text-muted" style={{ fontSize: '14px' }}>
-          {projects.length} projects
-        </span>
+      <div className="projects-grid-header">
+        <h5 className="projects-grid-title">{title}</h5>
+        <span className="projects-grid-count">{projects.length} projects</span>
       </div>
 
-      <Row className="g-3">
+      <Row className="projects-grid-row">
         {projects.length > 0 ? (
-          projects.map((project) => (
-            <Col key={project._id || project.id} xs={12}>
+          projects.map((project) => {
+            const projectId = project._id || project.id;
+            return (
+            <Col key={projectId} xs={12} sm={6} lg={4} xl={3} className="projects-grid-col">
               <Card
-                className="project-card project-card-list"
+                className={`project-card project-card-gallery h-100 ${openMenuId === projectId ? 'is-menu-open' : ''}`}
                 role={onOpen ? 'button' : undefined}
                 onClick={() => onOpen?.(project)}
               >
-                <CardBody>
+                <CardBody className="project-card-body">
                   <div className="project-card-row">
-                    <div className="project-card-icon">
-                      <Folder size={22} />
+                    <div className="project-card-top">
+                      <div className="project-card-icon">
+                        <Folder size={22} />
+                      </div>
+                      <div className="project-card-top-actions">
+                        <Dropdown
+                          direction="down"
+                          isOpen={openMenuId === projectId}
+                          toggle={(e) => {
+                            if (e?.stopPropagation) e.stopPropagation();
+                            setOpenMenuId((prev) => (prev === projectId ? null : projectId));
+                          }}
+                        >
+                          <DropdownToggle
+                            tag="button"
+                            type="button"
+                            className="project-card-more-btn"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical size={18} />
+                          </DropdownToggle>
+                        <DropdownMenu end>
+                            <DropdownItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit?.(project);
+                                setOpenMenuId(null);
+                              }}
+                            >
+                              Edit
+                            </DropdownItem>
+                          <DropdownItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete?.(project);
+                              setOpenMenuId(null);
+                            }}
+                            className="project-card-delete"
+                          >
+                            Delete
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </div>
                     </div>
 
                     <div className="project-card-content">
                       <div className="project-card-header">
-                        <h6 className="project-card-title">
-                          {project.name || project.title || 'Untitled project'}
-                        </h6>
+                        <div className="project-card-title-row">
+                          <h6 className="project-card-title">
+                            {project.name || project.title || 'Untitled project'}
+                          </h6>
+                          {project.category ? (
+                            <span className="project-card-tag">{project.category}</span>
+                          ) : null}
+                        </div>
                         <span className="project-card-updated">
                           {formatRelativeTime(project.lastActivityAt || project.updatedAt || project.createdAt)}
                         </span>
@@ -77,6 +134,17 @@ export default function ProjectsGrid({ projects, onToggleStar, onEdit, onDelete,
                     </div>
 
                     <div className="project-card-actions">
+                      <Button
+                        color="primary"
+                        size="sm"
+                        className="project-card-open-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onOpen?.(project);
+                        }}
+                      >
+                        Open
+                      </Button>
                       <button
                         type="button"
                         className="project-card-star"
@@ -92,59 +160,17 @@ export default function ProjectsGrid({ projects, onToggleStar, onEdit, onDelete,
                           color={project.isStarred ? '#f59e0b' : '#9ca3af'}
                         />
                       </button>
-
-                      <Button
-                        color="primary"
-                        size="sm"
-                        className="project-card-open-btn"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onOpen?.(project);
-                        }}
-                      >
-                        Open
-                      </Button>
-
-                      <UncontrolledDropdown direction="down">
-                        <DropdownToggle
-                          tag="button"
-                          type="button"
-                          className="btn btn-link p-0 text-muted"
-                          style={{ cursor: 'pointer' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical size={18} />
-                        </DropdownToggle>
-                        <DropdownMenu end>
-                          <DropdownItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEdit?.(project);
-                            }}
-                          >
-                            Edit
-                          </DropdownItem>
-                          <DropdownItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDelete?.(project);
-                            }}
-                            className="text-danger"
-                          >
-                            Delete
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </UncontrolledDropdown>
                     </div>
                   </div>
                 </CardBody>
               </Card>
             </Col>
-          ))
+          );
+          })
         ) : (
           <Col xs={12}>
-            <div className="text-center py-5">
-              <p className="text-muted fs-5">No projects found</p>
+            <div className="projects-empty-state">
+              <p className="projects-empty-text">{emptyMessage}</p>
             </div>
           </Col>
         )}

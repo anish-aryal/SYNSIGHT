@@ -18,14 +18,14 @@ export default function PageHeader({
   const ButtonIcon = buttonIcon;
 
   return (
-    <Row className="align-items-start mb-4">
+    <Row className="syn-page-header">
       <Col>
         <div className="syn-title">{title}</div>
-        {subtitle ? <div className="syn-subtitle mt-1">{subtitle}</div> : null}
+        {subtitle ? <div className="syn-subtitle">{subtitle}</div> : null}
       </Col>
 
       {(showSearch || showButton || customActions) && (
-        <Col xs="auto" className="d-flex align-items-center gap-2">
+        <Col xs="auto" className="syn-page-header-actions">
           {showSearch ? (
             <InputGroup style={{ width: 280 }}>
               <Button
@@ -65,7 +65,7 @@ export default function PageHeader({
           {showButton ? (
             <Button
               type="button"
-              className="syn-btn-primary d-flex align-items-center gap-2"
+              className="syn-btn-primary syn-btn-inline"
               onClick={onButtonClick}
             >
               <ButtonIcon size={16} />

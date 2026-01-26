@@ -8,7 +8,6 @@ import reportService from '../../api/services/reportService';
 import projectService from '../../api/services/projectService';
 import { useApp } from '../../api/context/AppContext';
 import ProjectPickerModal from '../../components/projects/ProjectPickerModal';
-import './Reports.css';
 
 const getFilenameFromHeaders = (headers) => {
   const disposition = headers?.['content-disposition'] || headers?.get?.('content-disposition');

@@ -14,6 +14,12 @@ export const ChatProvider = ({ children }) => {
 
   const [chats, setChats] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(false);
+  const [chatsPagination, setChatsPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 1
+  });
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -59,11 +65,22 @@ export const ChatProvider = ({ children }) => {
     return fn(chatId, message);
   }, []);
 
-  const fetchChats = useCallback(async () => {
+  const fetchChats = useCallback(async ({ page = 1, limit = 20, archived = false } = {}) => {
     try {
       setChatsLoading(true);
-      const res = await chatService.getChats();
-      if (res?.success) setChats(res.data.chats);
+      const res = await chatService.getChats(page, limit, archived);
+      if (res?.success) {
+        setChats(res.data?.chats || []);
+        if (res.data?.pagination) {
+          setChatsPagination(res.data.pagination);
+        } else {
+          setChatsPagination((prev) => ({
+            ...prev,
+            page,
+            limit
+          }));
+        }
+      }
     } catch (e) {
       showError(e.message || 'Failed to fetch chats');
     } finally {
@@ -112,6 +129,40 @@ export const ChatProvider = ({ children }) => {
       return false;
     }
   }, [showError, startNewChat]);
+
+  const updateChat = useCallback(async (chatId, data, options = {}) => {
+    const preserveUpdatedAt = options.preserveUpdatedAt;
+    try {
+      const res = await chatService.updateChat(chatId, data);
+      if (res?.success) {
+        setChats((prev) =>
+          prev.map((chat) => {
+            if (chat._id !== chatId) return chat;
+            const merged = { ...chat, ...res.data };
+            if (preserveUpdatedAt && chat?.updatedAt) {
+              merged.updatedAt = chat.updatedAt;
+            }
+            return merged;
+          })
+        );
+        if (currentChatRef.current === chatId) {
+          setCurrentChat((prev) => {
+            if (!prev) return prev;
+            const merged = { ...prev, ...res.data };
+            if (preserveUpdatedAt && prev?.updatedAt) {
+              merged.updatedAt = prev.updatedAt;
+            }
+            return merged;
+          });
+        }
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: res?.message || 'Failed to update chat' };
+    } catch (e) {
+      showError(e.message || 'Failed to update chat');
+      return { success: false, message: e.message || 'Failed to update chat' };
+    }
+  }, [showError]);
 
   const sendMessage = useCallback(async (query, overrides = {}) => {
     const trimmed = (query || '').trim();
@@ -215,6 +266,7 @@ export const ChatProvider = ({ children }) => {
 
         chats,
         chatsLoading,
+        chatsPagination,
 
         isAnalyzing,
         currentStep,
@@ -230,7 +282,8 @@ export const ChatProvider = ({ children }) => {
         startNewChat,
         loadChat,
         sendMessage,
-        deleteChat
+        deleteChat,
+        updateChat
       }}
     >
       {children}

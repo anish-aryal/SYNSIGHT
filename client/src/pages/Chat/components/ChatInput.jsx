@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Input, Button } from 'reactstrap';
 import { Clock4, Globe, ArrowUp } from 'lucide-react';
 import { useChat } from '../../../api/context/ChatContext';
-import './ChatInput.css';
 
 const TIMEFRAMES = [
   { value: 'last24hours', label: '24h' },

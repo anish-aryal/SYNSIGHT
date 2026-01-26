@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const AppContext = createContext(null);
 
@@ -15,49 +15,49 @@ export function AppProvider({ children }) {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-  };
+  }, [theme]);
 
-  const addNotification = (notification) => {
+  const removeNotification = useCallback((id) => {
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  }, []);
+
+  const addNotification = useCallback((notification) => {
     const id = Date.now();
     const newNotification = { id, ...notification };
-    setNotifications(prev => [...prev, newNotification]);
+    setNotifications((prev) => [...prev, newNotification]);
 
     setTimeout(() => {
       removeNotification(id);
     }, 5000);
 
     return id;
-  };
+  }, [removeNotification]);
 
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
-  };
-
-  const showSuccess = (message) => {
+  const showSuccess = useCallback((message) => {
     addNotification({ type: 'success', message });
-  };
+  }, [addNotification]);
 
-  const showError = (message) => {
+  const showError = useCallback((message) => {
     addNotification({ type: 'danger', message });
-  };
+  }, [addNotification]);
 
-  const showInfo = (message) => {
+  const showInfo = useCallback((message) => {
     addNotification({ type: 'info', message });
-  };
+  }, [addNotification]);
 
-  const showWarning = (message) => {
+  const showWarning = useCallback((message) => {
     addNotification({ type: 'warning', message });
-  };
+  }, [addNotification]);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(prev => !prev);
-  };
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => !prev);
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     theme,
     toggleTheme,
     notifications,
@@ -71,7 +71,20 @@ export function AppProvider({ children }) {
     toggleSidebar,
     globalLoading,
     setGlobalLoading
-  };
+  }), [
+    theme,
+    toggleTheme,
+    notifications,
+    addNotification,
+    removeNotification,
+    showSuccess,
+    showError,
+    showInfo,
+    showWarning,
+    sidebarCollapsed,
+    toggleSidebar,
+    globalLoading
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
