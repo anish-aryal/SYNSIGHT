@@ -60,3 +60,18 @@ export const getAnalysisStatistics = async () => {
   const response = await api.get('/analysis/statistics');
   return response.data;
 };
+
+export const addAnalysisComment = async (analysisId, text) => {
+  const response = await api.post(`/analysis/${analysisId}/comments`, { text });
+  return response.data;
+};
+
+export const updateAnalysisComment = async (analysisId, commentId, text) => {
+  const response = await api.patch(`/analysis/${analysisId}/comments/${commentId}`, { text });
+  return response.data;
+};
+
+export const deleteAnalysisComment = async (analysisId, commentId) => {
+  const response = await api.delete(`/analysis/${analysisId}/comments/${commentId}`);
+  return response.data;
+};

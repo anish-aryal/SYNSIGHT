@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, CardBody } from 'reactstrap';
 import { CheckCircle, XCircle, MinusCircle } from 'lucide-react';
 
-export default function SamplePostsList({ posts }) {
+export default function SamplePostsList({ posts, pageSize = 5 }) {
   if (!posts || posts.length === 0) return null;
   const [expandedPosts, setExpandedPosts] = useState(() => new Set());
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setPage(0);
+    setExpandedPosts(new Set());
+  }, [posts]);
 
   const getIcon = (sentiment) => {
     switch (sentiment?.toLowerCase()) {
@@ -36,22 +42,35 @@ export default function SamplePostsList({ posts }) {
     });
   };
 
+  const totalPosts = posts.length;
+  const totalPages = Math.max(1, Math.ceil(totalPosts / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const startIndex = safePage * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalPosts);
+  const pagePosts = posts.slice(startIndex, endIndex);
+
   return (
     <Card className="section-card">
       <CardBody className="p-0">
-        <div className="section-header">Sample Posts</div>
+        <div className="section-header sample-posts-header">
+          <span>Sample Posts</span>
+          <span className="sample-posts-count">
+            Showing {startIndex + 1}-{endIndex} of {totalPosts}
+          </span>
+        </div>
         <div className="section-body">
           <Row>
             <Col xs={12}>
-              {posts.slice(0, 5).map((post, index) => {
+              {pagePosts.map((post, index) => {
+                const postKey = post.id || post._id || post.url || `${startIndex + index}`;
                 const sentimentClass = post.sentiment?.toLowerCase() || 'neutral';
                 const sentimentLabel = post.sentiment || 'Neutral';
                 const text = post.text || '';
                 const isLong = text.length > maxLength;
-                const isExpanded = expandedPosts.has(index);
+                const isExpanded = expandedPosts.has(postKey);
 
                 return (
-                  <div key={index} className="sample-post-item">
+                  <div key={postKey} className="sample-post-item">
                     <div className={`post-icon ${sentimentClass}`}>
                       {getIcon(sentimentClass)}
                     </div>
@@ -64,10 +83,10 @@ export default function SamplePostsList({ posts }) {
                           <button
                             type="button"
                             className="post-toggle"
-                            onClick={() => togglePost(index)}
+                            onClick={() => togglePost(postKey)}
                             aria-expanded={isExpanded}
                           >
-                            {isExpanded ? 'Show less' : 'Read more'}
+                            {isExpanded ? 'Less' : 'More'}
                           </button>
                         )}
                       </div>
@@ -86,6 +105,29 @@ export default function SamplePostsList({ posts }) {
               })}
             </Col>
           </Row>
+          {totalPages > 1 && (
+            <div className="sample-posts-pagination">
+              <button
+                type="button"
+                className="sample-posts-page-btn"
+                onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+                disabled={safePage === 0}
+              >
+                Previous
+              </button>
+              <span className="sample-posts-page-indicator">
+                Page {safePage + 1} of {totalPages}
+              </span>
+              <button
+                type="button"
+                className="sample-posts-page-btn primary"
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages - 1))}
+                disabled={safePage === totalPages - 1}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </CardBody>
     </Card>

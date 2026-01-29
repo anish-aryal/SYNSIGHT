@@ -1,0 +1,38 @@
+/* ============================
+   Reports (uses syn-page-* common classes)
+============================ */
+
+.reports-page .border.rounded-2:hover {
+  background-color: var(--color-surface-alt) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.reports-page .input-group input:focus {
+  box-shadow: none;
+  border-color: #d1d5db;
+}
+
+.reports-page .input-group .btn:focus {
+  box-shadow: none;
+}
+
+.reports-page .gradient-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.report-item-deleting {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+
+.report-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+

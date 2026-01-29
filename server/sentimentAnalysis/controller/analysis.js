@@ -22,6 +22,8 @@ const buildDateRange = (samplePosts = []) => {
   };
 };
 
+const normalizeCommentText = (value) => (typeof value === 'string' ? value.trim() : '');
+
 
 export const analyzeText = async (req, res) => {
   try {
@@ -490,5 +492,72 @@ export const refreshAnalysis = async (req, res) => {
   } catch (error) {
     console.error('Refresh analysis error:', error);
     return sendErrorResponse(res, error.message || 'Failed to refresh analysis', 500);
+  }
+};
+
+export const addAnalysisComment = async (req, res) => {
+  try {
+    const text = normalizeCommentText(req.body?.text);
+    if (!text) {
+      return sendErrorResponse(res, 'Comment text is required', 400);
+    }
+
+    const analysis = await Analysis.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
+      { $push: { comments: { text } } },
+      { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!analysis) {
+      return sendErrorResponse(res, 'Analysis not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment added', analysis.comments);
+  } catch (error) {
+    console.error('Add analysis comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to add comment', 500);
+  }
+};
+
+export const updateAnalysisComment = async (req, res) => {
+  try {
+    const text = normalizeCommentText(req.body?.text);
+    if (!text) {
+      return sendErrorResponse(res, 'Comment text is required', 400);
+    }
+
+    const analysis = await Analysis.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, 'comments._id': req.params.commentId },
+      { $set: { 'comments.$.text': text } },
+      { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!analysis) {
+      return sendErrorResponse(res, 'Comment not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment updated', analysis.comments);
+  } catch (error) {
+    console.error('Update analysis comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to update comment', 500);
+  }
+};
+
+export const deleteAnalysisComment = async (req, res) => {
+  try {
+    const analysis = await Analysis.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, 'comments._id': req.params.commentId },
+      { $pull: { comments: { _id: req.params.commentId } } },
+      { new: true }
+    );
+
+    if (!analysis) {
+      return sendErrorResponse(res, 'Comment not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment deleted', analysis.comments);
+  } catch (error) {
+    console.error('Delete analysis comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to delete comment', 500);
   }
 };

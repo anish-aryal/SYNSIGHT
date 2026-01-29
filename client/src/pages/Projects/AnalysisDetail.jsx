@@ -17,10 +17,8 @@ import {
   Input
 } from 'reactstrap';
 import {
-  ArrowLeft,
   RefreshCw,
   Share2,
-  Download,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -29,14 +27,16 @@ import {
   MinusCircle
 } from 'lucide-react';
 import { useApp } from '../../api/context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import projectService from '../../api/services/projectService';
 import * as analysisService from '../../api/services/analysisService';
-import reportService from '../../api/services/reportService';
 import SentimentOverTimeChart from '../Chat/components/SentimentOverTimeChart';
 import TopKeywordsChart from '../Chat/components/TopKeywordsChart';
 import SamplePostsList from '../Chat/components/SamplePostsList';
 import KeyInsightsCard from '../Chat/components/KeyInsightsCard';
 import SentimentTabs from '../Chat/components/SentimentTabs';
+import ProjectBreadcrumbs from '../../components/projects/ProjectBreadcrumbs';
+import HeaderComments from '../../components/projects/HeaderComments';
 
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
@@ -104,30 +104,6 @@ const buildSentimentSeriesFromSamples = (posts = [], timeframeKey) => {
   return Array.from(buckets.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
 };
 
-const buildReportPayload = (analysis) => {
-  if (!analysis) return null;
-  const percentages = analysis?.sentiment?.percentages || analysis?.percentages || {};
-  const distribution = analysis?.sentiment?.distribution || analysis?.sentiment_distribution || {};
-  const scores = analysis?.sentiment?.scores || analysis?.average_scores || {};
-
-  return {
-    ...analysis,
-    analysisId: analysis._id,
-    query: analysis.query || analysis.searchQuery,
-    source: analysis.source,
-    percentages,
-    sentiment_distribution: distribution,
-    overall_sentiment: analysis?.sentiment?.overall || analysis?.overall_sentiment,
-    average_scores: scores,
-    total_analyzed: analysis?.totalAnalyzed ?? analysis?.total_analyzed ?? 0,
-    topKeywords: analysis?.topKeywords || analysis?.top_keywords || [],
-    samplePosts: analysis?.samplePosts || analysis?.sample_posts || [],
-    platformBreakdown: analysis?.platformBreakdown || analysis?.platform_breakdown || [],
-    dateRange: analysis?.dateRange || {},
-    insights: analysis?.insights || {}
-  };
-};
-
 const EmptyStateCard = ({ title, description }) => (
   <Card className="analysis-detail-card">
     <CardBody>
@@ -187,15 +163,16 @@ export default function AnalysisDetail({
   analysisId,
   projectId,
   onBack,
-  backLabel = 'Back to Project'
+  onRequestCloseProjectDetail
 }) {
+  const navigate = useNavigate();
   const { showError, showSuccess } = useApp();
+  const isEmbedded = Boolean(onRequestCloseProjectDetail);
 
   const [analysis, setAnalysis] = useState(null);
   const [project, setProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [isExporting, setIsExporting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
   const [refreshTimeframe, setRefreshTimeframe] = useState('last7days');
@@ -299,6 +276,27 @@ export default function AnalysisDetail({
     }
   };
 
+  const goToProjects = () => {
+    let handled = false;
+    if (onBack) {
+      onBack();
+      handled = true;
+    }
+    if (!handled) {
+      navigate('/projects');
+    }
+  };
+
+  const goToProject = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    if (projectId) {
+      navigate(`/projects/${projectId}`);
+    }
+  };
+
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -372,53 +370,23 @@ export default function AnalysisDetail({
     }
   };
 
-  const handleExport = async () => {
-    if (!analysis?._id) return;
-    setIsExporting(true);
-    try {
-      let reportData = null;
-      const existing = await reportService.getReportByAnalysisId(analysis._id);
-      if (existing?.success && existing.data) {
-        reportData = existing.data;
-      } else {
-        const payload = buildReportPayload(analysis);
-        const generated = await reportService.generateReport(payload);
-        if (generated?.success && generated.data) {
-          reportData = generated.data;
-        }
-      }
-
-      if (!reportData?._id) {
-        throw new Error('Report unavailable for export');
-      }
-
-      const response = await reportService.downloadReportPdf(reportData._id);
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sentiment-report-${(queryLabel || 'analysis').replace(/\s+/g, '-')}-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showSuccess('Report downloaded');
-    } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Failed to export report';
-      showError(message);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   if (isLoading) {
     return (
-      <div className="analysis-detail-page">
-        <div className="analysis-detail-loading">
-          <div className="skeleton-wrapper">
-            <div className="skeleton-line" style={{ width: '40%' }} />
-            <div className="skeleton-line" style={{ width: '60%' }} />
-            <div className="skeleton-line" style={{ width: '30%' }} />
+      <div className={`analysis-detail-page ${isEmbedded ? 'is-embedded' : ''}`}>
+        <div className={`analysis-detail-shell ${isEmbedded ? 'is-embedded' : ''}`}>
+          <ProjectBreadcrumbs
+            onBack={goToProjects}
+            projectName={project?.name}
+            analysisLabel={queryLabel}
+            onProjectClick={project?.name ? goToProject : undefined}
+          />
+          <div className="analysis-detail-loading">
+            <div className="skeleton-wrapper">
+              <div className="skeleton-line" style={{ width: '40%' }} />
+              <div className="skeleton-line" style={{ width: '60%' }} />
+              <div className="skeleton-line" style={{ width: '30%' }} />
+            </div>
           </div>
         </div>
       </div>
@@ -427,97 +395,98 @@ export default function AnalysisDetail({
 
   if (!analysis) {
     return (
-      <div className="analysis-detail-page">
-        <div className="analysis-detail-loading">
-          <p className="text-muted">Analysis not found.</p>
-          <Button color="primary" onClick={handleBack}>
-            Back to Projects
-          </Button>
+      <div className={`analysis-detail-page ${isEmbedded ? 'is-embedded' : ''}`}>
+        <div className={`analysis-detail-shell ${isEmbedded ? 'is-embedded' : ''}`}>
+          <ProjectBreadcrumbs
+            onBack={goToProjects}
+            projectName={project?.name}
+            analysisLabel={queryLabel}
+            onProjectClick={project?.name ? goToProject : undefined}
+          />
+          <div className="analysis-detail-loading">
+            <p className="text-muted">Analysis not found.</p>
+            <Button color="primary" onClick={handleBack}>
+              Back to Projects
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="analysis-detail-page">
-      <div className="analysis-detail-hero">
-        <div className="analysis-detail-top">
-          <button type="button" className="analysis-detail-back" onClick={handleBack}>
-            <ArrowLeft size={16} /> {backLabel}
-          </button>
-          <div className="analysis-detail-actions">
-            <div className="analysis-detail-timeframe">
-              <span className="label">Time Range:</span>
-              <span className="value">{timeframeLabel}</span>
-            </div>
-            <button
-              type="button"
-              className="analysis-detail-action"
-              onClick={openRefreshModal}
-              disabled={isRefreshing}
-            >
-              <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
-              Refresh
-            </button>
-            <button type="button" className="analysis-detail-action" onClick={handleShare}>
-              <Share2 size={16} />
-              Share
-            </button>
-            <button
-              type="button"
-              className="analysis-detail-action primary"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              <Download size={16} />
-              {isExporting ? 'Exporting...' : 'Export'}
-            </button>
-          </div>
-        </div>
+    <div className={`analysis-detail-page ${isEmbedded ? 'is-embedded' : ''}`}>
+      <div className={`analysis-detail-shell ${isEmbedded ? 'is-embedded' : ''}`}>
+        <ProjectBreadcrumbs
+          onBack={goToProjects}
+          projectName={project?.name}
+          analysisLabel={queryLabel}
+          onProjectClick={project?.name ? goToProject : undefined}
+        />
 
-        <div className="analysis-detail-header">
-          <div className="analysis-detail-title-group">
-            <div className="analysis-detail-avatar">
-              {(queryLabel || 'A').charAt(0).toUpperCase()}
+        <div className="analysis-detail-hero">
+          <div className="analysis-detail-hero-top">
+            <div className="analysis-detail-hero-actions">
+              <div className="analysis-detail-timeframe">
+                <span className="label">Time Range:</span>
+                <span className="value">{timeframeLabel}</span>
+              </div>
+              <button
+                type="button"
+                className="analysis-detail-action"
+                onClick={openRefreshModal}
+                disabled={isRefreshing}
+              >
+                <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
+                Refresh
+              </button>
+              <button type="button" className="analysis-detail-action primary" onClick={handleShare}>
+                <Share2 size={16} />
+                Share
+              </button>
             </div>
-            <div>
-              <h1>{queryLabel}</h1>
-              <div className="analysis-detail-meta">
-                <span className="analysis-detail-source">{formatSourceLabel(analysis.source)}</span>
-                <span>•</span>
-                <span>{formatNumber(totalAnalyzed)} posts analyzed</span>
-                <span>•</span>
-                <span>{formatDate(analysis.createdAt)}</span>
-                {project?.name ? (
-                  <>
-                    <span>•</span>
-                    <span>{project.name}</span>
-                  </>
-                ) : null}
+          </div>
+
+          <div className="analysis-detail-hero-main">
+            <div className="analysis-detail-title-group">
+              <div className="analysis-detail-avatar">
+                {(queryLabel || 'A').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h1>{queryLabel}</h1>
+                <div className="analysis-detail-meta">
+                  <span className="analysis-detail-source">{formatSourceLabel(analysis.source)}</span>
+                  <span>•</span>
+                  <span>{formatNumber(totalAnalyzed)} posts analyzed</span>
+                  <span>•</span>
+                  <span>{formatDate(analysis.createdAt)}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="analysis-detail-meta-row">
-            <div className="analysis-detail-meta-item">
-              <ThumbsUp size={16} />
-              {Math.round(percentages?.positive || 0)}% Positive
+            <div className="analysis-detail-meta-row">
+              <span className="pill pill-positive">
+                <ThumbsUp size={16} />
+                {Math.round(percentages?.positive || 0)}% Positive
+              </span>
+              <span className="pill pill-neutral">
+                <MinusCircle size={16} />
+                {Math.round(percentages?.neutral || 0)}% Neutral
+              </span>
+              <span className="pill pill-negative">
+                <ThumbsDown size={16} />
+                {Math.round(percentages?.negative || 0)}% Negative
+              </span>
             </div>
-            <div className="analysis-detail-meta-item">
-              <MinusCircle size={16} />
-              {Math.round(percentages?.neutral || 0)}% Neutral
-            </div>
-            <div className="analysis-detail-meta-item">
-              <ThumbsDown size={16} />
-              {Math.round(percentages?.negative || 0)}% Negative
-            </div>
-            <div className={`analysis-detail-meta-item trend ${trendData.className}`}>
-              <TrendIcon size={16} />
-              {trendData.label}
-            </div>
+          </div>
+          <div className="header-comments-row">
+            <HeaderComments
+              entityType="analysis"
+              entityId={analysis?._id}
+              initialComments={analysis?.comments}
+            />
           </div>
         </div>
-      </div>
 
       <Modal isOpen={isRefreshModalOpen} toggle={() => setIsRefreshModalOpen(false)} centered>
         <ModalHeader toggle={() => setIsRefreshModalOpen(false)}>
@@ -565,173 +534,191 @@ export default function AnalysisDetail({
         </ModalFooter>
       </Modal>
 
-      <div className="analysis-detail-stats">
-        <div className="analysis-detail-stat-card positive">
-          <div className="analysis-detail-stat-icon">
-            <ThumbsUp size={18} />
-          </div>
-          <div className="analysis-detail-stat-value">{formatNumber(positiveCount)}</div>
-          <div className="analysis-detail-stat-label">Positive Posts</div>
-        </div>
-        <div className="analysis-detail-stat-card neutral">
-          <div className="analysis-detail-stat-icon">
-            <MinusCircle size={18} />
-          </div>
-          <div className="analysis-detail-stat-value">{formatNumber(neutralCount)}</div>
-          <div className="analysis-detail-stat-label">Neutral Posts</div>
-        </div>
-        <div className="analysis-detail-stat-card negative">
-          <div className="analysis-detail-stat-icon">
-            <ThumbsDown size={18} />
-          </div>
-          <div className="analysis-detail-stat-value">{formatNumber(negativeCount)}</div>
-          <div className="analysis-detail-stat-label">Negative Posts</div>
-        </div>
-        <div className="analysis-detail-stat-card score">
-          <div className="analysis-detail-stat-icon">
-            <TrendingUp size={18} />
-          </div>
-          <div className="analysis-detail-stat-value">{sentimentScore}%</div>
-          <div className="analysis-detail-stat-label">Sentiment Score</div>
-        </div>
-      </div>
+      <div className="analysis-detail-body">
+        <div className="analysis-detail-grid">
+          <aside className="analysis-detail-aside">
+            <div className="analysis-detail-aside-card">
+              <div className="analysis-detail-aside-title">Snapshot</div>
+              <div className="analysis-detail-stats">
+                <div className="analysis-detail-stat-card positive">
+                  <div className="analysis-detail-stat-icon">
+                    <ThumbsUp size={18} />
+                  </div>
+                  <div className="analysis-detail-stat-value">{formatNumber(positiveCount)}</div>
+                  <div className="analysis-detail-stat-label">Positive Posts</div>
+                </div>
+                <div className="analysis-detail-stat-card neutral">
+                  <div className="analysis-detail-stat-icon">
+                    <MinusCircle size={18} />
+                  </div>
+                  <div className="analysis-detail-stat-value">{formatNumber(neutralCount)}</div>
+                  <div className="analysis-detail-stat-label">Neutral Posts</div>
+                </div>
+                <div className="analysis-detail-stat-card negative">
+                  <div className="analysis-detail-stat-icon">
+                    <ThumbsDown size={18} />
+                  </div>
+                  <div className="analysis-detail-stat-value">{formatNumber(negativeCount)}</div>
+                  <div className="analysis-detail-stat-label">Negative Posts</div>
+                </div>
+                <div className="analysis-detail-stat-card score">
+                  <div className="analysis-detail-stat-icon">
+                    <TrendingUp size={18} />
+                  </div>
+                  <div className="analysis-detail-stat-value">{sentimentScore}%</div>
+                  <div className="analysis-detail-stat-label">Sentiment Score</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+          <div className="analysis-detail-main-column">
+            <div className="analysis-detail-tabs syn-pill-toggle">
+              <Nav className="syn-pill-toggle-nav">
+                <NavItem>
+                  <NavLink
+                    className={`syn-pill-toggle-btn ${activeTab === 'overview' ? 'is-active' : ''}`}
+                    onClick={() => setActiveTab('overview')}
+                  >
+                    Overview
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                <NavLink
+                  className={`syn-pill-toggle-btn ${activeTab === 'posts' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('posts')}
+                >
+                  <span>Posts</span>
+                </NavLink>
+              </NavItem>
+                <NavItem>
+                  <NavLink
+                    className={`syn-pill-toggle-btn ${activeTab === 'insights' ? 'is-active' : ''}`}
+                    onClick={() => setActiveTab('insights')}
+                  >
+                    Insights
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    className={`syn-pill-toggle-btn ${activeTab === 'demographics' ? 'is-active' : ''}`}
+                    onClick={() => setActiveTab('demographics')}
+                  >
+                    Demographics
+                  </NavLink>
+                </NavItem>
+              </Nav>
+            </div>
 
-      <div className="analysis-detail-tabs">
-        <Nav pills>
-          <NavItem>
-            <NavLink
-              active={activeTab === 'overview'}
-              className={activeTab === 'overview' ? 'active' : ''}
-              onClick={() => setActiveTab('overview')}
-            >
-              Overview
-            </NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink
-              active={activeTab === 'posts'}
-              className={activeTab === 'posts' ? 'active' : ''}
-              onClick={() => setActiveTab('posts')}
-            >
-              Posts ({samplePosts?.length || 0})
-            </NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink
-              active={activeTab === 'insights'}
-              className={activeTab === 'insights' ? 'active' : ''}
-              onClick={() => setActiveTab('insights')}
-            >
-              Insights
-            </NavLink>
-          </NavItem>
-          <NavItem>
-            <NavLink
-              active={activeTab === 'demographics'}
-              className={activeTab === 'demographics' ? 'active' : ''}
-              onClick={() => setActiveTab('demographics')}
-            >
-              Demographics
-            </NavLink>
-          </NavItem>
-        </Nav>
-      </div>
+            <div className="analysis-detail-content">
+              {activeTab === 'overview' && (
+                <div className="analysis-detail-section">
+                  <Row className="g-3">
+                    <Col xs={12} lg={8}>
+                      {sentimentSeries && sentimentSeries.length > 0 ? (
+                        <SentimentOverTimeChart data={sentimentSeries} />
+                      ) : (
+                        <EmptyStateCard
+                          title="Sentiment Over Time"
+                          description="Sentiment trend data is not available for this analysis."
+                        />
+                      )}
+                    </Col>
+                    <Col xs={12} lg={4}>
+                      <EngagementBreakdown
+                        likes={engagement.likes}
+                        shares={engagement.shares}
+                        comments={engagement.comments}
+                        total={engagement.total}
+                      />
+                    </Col>
+                  </Row>
 
-      <div className="analysis-detail-content">
-        {activeTab === 'overview' && (
-          <>
-            <Row className="g-3">
-              <Col xs={12} lg={8}>
-                {sentimentSeries && sentimentSeries.length > 0 ? (
-                  <SentimentOverTimeChart data={sentimentSeries} />
-                ) : (
-                  <EmptyStateCard
-                    title="Sentiment Over Time"
-                    description="Sentiment trend data is not available for this analysis."
-                  />
-                )}
-              </Col>
-              <Col xs={12} lg={4}>
-                <EngagementBreakdown
-                  likes={engagement.likes}
-                  shares={engagement.shares}
-                  comments={engagement.comments}
-                  total={engagement.total}
-                />
-              </Col>
-            </Row>
-
-            <Row className="mt-3">
-              <Col xs={12}>
-                {topKeywords.length ? (
-                  <Card className="analysis-detail-card">
-                    <CardBody>
-                      <div className="analysis-detail-card-title">Top Keywords & Topics</div>
-                      <div className="analysis-detail-card-subtitle">Most mentioned words in the conversation</div>
-                      <div className="analysis-detail-keywords">
-                        {topKeywords.slice(0, 10).map((keyword, index) => (
-                          <div key={`${keyword.keyword}-${index}`} className={`analysis-detail-chip ${keyword.sentiment || 'neutral'}`}>
-                            <span>{keyword.keyword}</span>
-                            <span className="analysis-detail-chip-count">{keyword.count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardBody>
-                  </Card>
-                ) : (
-                  <EmptyStateCard
-                    title="Top Keywords & Topics"
-                    description="Keywords will appear once enough posts are analyzed."
-                  />
-                )}
-              </Col>
-            </Row>
-          </>
-        )}
-
-        {activeTab === 'posts' && (
-          <Row className="g-3">
-            <Col xs={12}>
-              {samplePosts?.length ? (
-                <SamplePostsList posts={samplePosts} />
-              ) : (
-                <EmptyStateCard
-                  title="Sample Posts"
-                  description="No sample posts were saved for this analysis."
-                />
+                  <Row className="mt-3">
+                    <Col xs={12}>
+                      {topKeywords.length ? (
+                        <Card className="analysis-detail-card">
+                          <CardBody>
+                            <div className="analysis-detail-card-title">Top Keywords & Topics</div>
+                            <div className="analysis-detail-card-subtitle">
+                              Most mentioned words in the conversation
+                            </div>
+                            <div className="analysis-detail-keywords">
+                              {topKeywords.slice(0, 10).map((keyword, index) => (
+                                <div
+                                  key={`${keyword.keyword}-${index}`}
+                                  className={`analysis-detail-chip ${keyword.sentiment || 'neutral'}`}
+                                >
+                                  <span>{keyword.keyword}</span>
+                                  <span className="analysis-detail-chip-count">{keyword.count}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ) : (
+                        <EmptyStateCard
+                          title="Top Keywords & Topics"
+                          description="Keywords will appear once enough posts are analyzed."
+                        />
+                      )}
+                    </Col>
+                  </Row>
+                </div>
               )}
-            </Col>
-          </Row>
-        )}
 
-        {activeTab === 'insights' && (
-          <Row className="g-3">
-            <Col xs={12}>
-              <KeyInsightsCard insights={analysis.insights} />
-            </Col>
-            <Col xs={12}>
-              <SentimentTabs
-                percentages={percentages}
-                platformBreakdown={platformBreakdown}
-              />
-            </Col>
-            <Col xs={12}>
-              <TopKeywordsChart keywords={topKeywords} />
-            </Col>
-          </Row>
-        )}
+              {activeTab === 'posts' && (
+                <div className="analysis-detail-section">
+                  <Row className="g-3">
+                    <Col xs={12}>
+                      {samplePosts?.length ? (
+                        <SamplePostsList posts={samplePosts} />
+                      ) : (
+                        <EmptyStateCard
+                          title="Sample Posts"
+                          description="No sample posts were saved for this analysis."
+                        />
+                      )}
+                    </Col>
+                  </Row>
+                </div>
+              )}
 
-        {activeTab === 'demographics' && (
-          <Row className="g-3">
-            <Col xs={12}>
-              <EmptyStateCard
-                title="Demographics"
-                description="Demographic insights are not available for this analysis."
-              />
-            </Col>
-          </Row>
-        )}
+              {activeTab === 'insights' && (
+                <div className="analysis-detail-section">
+                  <Row className="g-3">
+                    <Col xs={12}>
+                      <KeyInsightsCard insights={analysis.insights} />
+                    </Col>
+                    <Col xs={12}>
+                      <SentimentTabs
+                        percentages={percentages}
+                        platformBreakdown={platformBreakdown}
+                      />
+                    </Col>
+                    <Col xs={12}>
+                      <TopKeywordsChart keywords={topKeywords} />
+                    </Col>
+                  </Row>
+                </div>
+              )}
+
+              {activeTab === 'demographics' && (
+                <div className="analysis-detail-section">
+                  <Row className="g-3">
+                    <Col xs={12}>
+                      <EmptyStateCard
+                        title="Demographics"
+                        description="Demographic insights are not available for this analysis."
+                      />
+                    </Col>
+                  </Row>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
     </div>
   );
 }

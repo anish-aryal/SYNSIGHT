@@ -3,14 +3,14 @@ import {
   MessageSquare,
   LayoutDashboard,
   FolderOpen,
-  Compass,
   FileText,
   History,
   BarChart3,
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Flame
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Nav, NavItem, NavLink, Navbar, NavbarBrand } from 'reactstrap';
@@ -24,11 +24,11 @@ export default function Sidebar({ mode = 'full' }) {
 
   const menuItems = [
     { icon: MessageSquare, label: 'Chat', path: '/chat' },
+    { icon: History, label: 'Chat History', path: '/history' },
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: FolderOpen, label: 'Projects', path: '/projects' },
-    { icon: Compass, label: 'Explore', path: '/explore' },
+    { icon: Flame, label: 'Trending', path: '/explore' },
     { icon: FileText, label: 'Reports', path: '/reports' },
-    { icon: History, label: 'History', path: '/history' },
     { icon: Settings, label: 'Settings', path: '/settings' }
   ];
 

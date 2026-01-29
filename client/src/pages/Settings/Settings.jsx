@@ -21,7 +21,29 @@ export default function Settings() {
       case 'security':
         return <SecuritySettings />;
       case 'billing':
-        return <div className="text-center py-5 text-muted">Billing settings coming soon...</div>;
+        return (
+          <div className="settings-upgrade">
+            <div className="settings-upgrade-card">
+              <div className="settings-upgrade-header">
+                <div>
+                  <h3>Upgrade to Pro</h3>
+                  <p>Unlock advanced analytics, exports, and priority processing for your team.</p>
+                </div>
+                <span className="settings-upgrade-badge">Coming soon</span>
+              </div>
+              <div className="settings-upgrade-body">
+                <div className="settings-upgrade-grid">
+                  <div className="settings-upgrade-item">Unlimited projects &amp; reports</div>
+                  <div className="settings-upgrade-item">Priority analysis queue</div>
+                  <div className="settings-upgrade-item">Premium exports and sharing</div>
+                </div>
+                <div className="settings-upgrade-note">
+                  We’re putting the finishing touches on pricing and billing. You’ll be able to upgrade here soon.
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return <ProfileSettings />;
     }

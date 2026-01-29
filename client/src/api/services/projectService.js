@@ -35,6 +35,21 @@ export const deleteProject = async (id) => {
   return response.data;
 };
 
+export const addProjectComment = async (id, text) => {
+  const response = await api.post(`/projects/${id}/comments`, { text });
+  return response.data;
+};
+
+export const updateProjectComment = async (id, commentId, text) => {
+  const response = await api.patch(`/projects/${id}/comments/${commentId}`, { text });
+  return response.data;
+};
+
+export const deleteProjectComment = async (id, commentId) => {
+  const response = await api.delete(`/projects/${id}/comments/${commentId}`);
+  return response.data;
+};
+
 export default {
   getProjects,
   getProjectById,
@@ -42,5 +57,8 @@ export default {
   getProjectReports,
   createProject,
   updateProject,
-  deleteProject
+  deleteProject,
+  addProjectComment,
+  updateProjectComment,
+  deleteProjectComment
 };

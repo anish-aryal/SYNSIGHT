@@ -24,6 +24,7 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
   const [existingReport, setExistingReport] = useState(null);
   const [error, setError] = useState(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [assignTarget, setAssignTarget] = useState(null);
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsSaving, setProjectsSaving] = useState(false);
@@ -121,6 +122,16 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
       showError('No analysis available to save');
       return;
     }
+    setAssignTarget('analysis');
+    setIsProjectModalOpen(true);
+  };
+
+  const handleAddReportToProject = () => {
+    if (!report?._id) {
+      showError('No report available to add');
+      return;
+    }
+    setAssignTarget('report');
     setIsProjectModalOpen(true);
   };
 
@@ -147,6 +158,26 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
   }, [isProjectModalOpen, showError]);
 
   const handleAssignProject = async (projectId) => {
+    if (assignTarget === 'report') {
+      if (!report?._id) return;
+      setProjectsSaving(true);
+      try {
+        const response = await reportService.updateReportProject(report._id, projectId);
+        if (response?.success) {
+          showSuccess('Report saved to project');
+          setIsProjectModalOpen(false);
+        } else {
+          showError(response?.message || 'Failed to save report to project');
+        }
+      } catch (err) {
+        const message = err.response?.data?.message || err.message || 'Failed to save report to project';
+        showError(message);
+      } finally {
+        setProjectsSaving(false);
+      }
+      return;
+    }
+
     if (!analysisId) return;
     setProjectsSaving(true);
     try {
@@ -269,6 +300,7 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
         report={report}
         error={error}
         onDownload={handleDownload}
+        onAddToProject={report ? handleAddReportToProject : null}
       />
 
       <ProjectPickerModal
@@ -279,7 +311,7 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
         isSaving={projectsSaving}
         onAssign={handleAssignProject}
         onCreateAndAssign={handleCreateAndAssign}
-        title="Save analysis to project"
+        title={assignTarget === 'report' ? 'Save report to project' : 'Save analysis to project'}
       />
     </>
   );

@@ -4,36 +4,41 @@ import {
   Button,
   Card,
   CardBody,
+  FormGroup,
+  Input,
+  Label,
   Nav,
   NavItem,
   NavLink
 } from 'reactstrap';
 import {
-  ArrowLeft,
   Star,
   Share2,
   Download,
+  PencilLine,
   Eye,
   Trash2,
-  MessageSquare,
   Search,
   X,
-  BarChart2,
   MessageCircle,
   ThumbsUp,
   Globe,
   TrendingUp,
   Hash,
   Calendar,
-  Clock
+  Clock,
+  BarChart3
 } from 'lucide-react';
 import { useApp } from '../../api/context/AppContext';
 import * as chatService from '../../api/services/chatService';
 import projectService from '../../api/services/projectService';
 import * as analysisService from '../../api/services/analysisService';
 import reportService from '../../api/services/reportService';
-import ReportModal from '../Chat/components/ReportModal';
+import ReportDetailPanel from './ReportDetail';
 import AnalysisDetailPanel from './AnalysisDetail';
+import ProjectBreadcrumbs from '../../components/projects/ProjectBreadcrumbs';
+import HeaderComments from '../../components/projects/HeaderComments';
+import BadgeSelect, { CATEGORY_OPTIONS, STATUS_OPTIONS, getCategoryBadgeClass, getStatusBadgeClass, toBadgeSlug } from '../../components/projects/BadgeSelect';
 
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
@@ -113,6 +118,14 @@ const formatSourceLabel = (value) => {
     .join(' ');
 };
 
+const formatStatusLabel = (value) => {
+  if (!value) return '';
+  return String(value)
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export default function ProjectDetail({ projectId, onClose }) {
   const { showError, showSuccess } = useApp();
   const navigate = useNavigate();
@@ -125,15 +138,22 @@ export default function ProjectDetail({ projectId, onClose }) {
   const [isLoading, setIsLoading] = useState(true);
   const [removingAnalysisId, setRemovingAnalysisId] = useState(null);
   const [removingReportId, setRemovingReportId] = useState(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [isReportLoading, setIsReportLoading] = useState(false);
-  const [activeReport, setActiveReport] = useState(null);
-  const [reportError, setReportError] = useState(null);
+  const [activeReportId, setActiveReportId] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeAnalysisId, setActiveAnalysisId] = useState(null);
   const [redirectingAnalysisId, setRedirectingAnalysisId] = useState(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [formState, setFormState] = useState({
+    name: '',
+    description: '',
+    category: '',
+    status: 'Active',
+    isStarred: false
+  });
 
   const totalPosts = useMemo(
     () => analyses.reduce((sum, item) => sum + (Number(item.totalAnalyzed) || 0), 0),
@@ -169,6 +189,34 @@ export default function ProjectDetail({ projectId, onClose }) {
     if (!totalPostsCount) return 0;
     return Math.round(weightedTotal / totalPostsCount);
   }, [analyses]);
+
+  const projectChips = useMemo(() => {
+    if (!project) return [];
+    return [
+      project.category || 'General',
+      `${platformCount} platforms`,
+      `${totalPosts} posts`,
+      `${reports.length} reports`
+    ];
+  }, [project, platformCount, totalPosts, reports.length]);
+
+  const ownerLabel = useMemo(() => {
+    if (!project) return 'Unknown owner';
+    if (typeof project.owner === 'string') return project.owner || 'Unknown owner';
+    return (
+      project.owner?.name ||
+      project.owner?.fullName ||
+      project.owner?.email ||
+      'Unknown owner'
+    );
+  }, [project]);
+
+  const recentReports = useMemo(() => reports.slice(0, 3), [reports]);
+
+  const sentimentProgress = analyses.length ? Math.min(100, Math.max(0, avgSentimentScore)) : 12;
+  const sentimentLabel = analyses.length
+    ? `${avgSentimentScore}% of analyzed posts are positive`
+    : 'Run an analysis to surface sentiment insights.';
 
   useEffect(() => {
     const timer = setTimeout(() => setIsPanelOpen(true), 10);
@@ -293,31 +341,21 @@ export default function ProjectDetail({ projectId, onClose }) {
     }
   };
 
-  const handleViewReport = async (reportId) => {
+  const handleViewReport = (reportId) => {
     if (!reportId) return;
-    setIsReportModalOpen(true);
-    setIsReportLoading(true);
-    setActiveReport(null);
-    setReportError(null);
-    try {
-      const response = await reportService.getReportById(reportId);
-      if (response?.success) {
-        setActiveReport(response.data);
-      } else {
-        throw new Error(response?.message || 'Failed to load report');
-      }
-    } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Failed to load report';
-      setReportError(message);
-      showError(message);
-    } finally {
-      setIsReportLoading(false);
-    }
+    setActiveAnalysisId(null);
+    setActiveReportId(reportId);
+    setActiveTab('reports');
   };
 
   const handleViewAnalysis = (analysisId) => {
     if (!analysisId) return;
+    setActiveReportId(null);
     setActiveAnalysisId(analysisId);
+  };
+
+  const handleCloseReport = () => {
+    setActiveReportId(null);
   };
 
   const handleGoToChat = async (analysisId) => {
@@ -381,11 +419,55 @@ export default function ProjectDetail({ projectId, onClose }) {
     });
   }, [reports, searchQuery]);
 
-  const closeReportModal = () => {
-    if (isReportLoading) return;
-    setIsReportModalOpen(false);
-    setActiveReport(null);
-    setReportError(null);
+  const isDetailView = Boolean(activeAnalysisId || activeReportId);
+  const isStarred = Boolean(project?.isStarred);
+
+  const openEditModal = () => {
+    if (!project) return;
+    const normalizedCategory = typeof project?.category === 'string' ? project.category.trim().toLowerCase() : '';
+    const normalizedStatus = typeof project?.status === 'string' ? project.status.trim().toLowerCase() : '';
+    const nextCategory = CATEGORY_OPTIONS.find((option) => option.toLowerCase() === normalizedCategory) || '';
+    const nextStatus = STATUS_OPTIONS.find((option) => option.toLowerCase() === normalizedStatus) || STATUS_OPTIONS[0];
+    setFormState({
+      name: project?.name || '',
+      description: project?.description || '',
+      category: nextCategory,
+      status: nextStatus,
+      isStarred: Boolean(project?.isStarred)
+    });
+    setFormErrors({});
+    setIsEditOpen(true);
+  };
+
+  const handleSaveProject = async () => {
+    if (!project?._id) return;
+    const nextErrors = {};
+    if (!formState.name.trim()) nextErrors.name = 'Project name is required.';
+    if (!formState.category || !CATEGORY_OPTIONS.some((option) => option.toLowerCase() === formState.category.toLowerCase())) {
+      nextErrors.category = 'Please select a valid category.';
+    }
+    if (!formState.status || !STATUS_OPTIONS.some((option) => option.toLowerCase() === formState.status.toLowerCase())) {
+      nextErrors.status = 'Please select a valid status.';
+    }
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setIsSaving(true);
+    try {
+      const response = await projectService.updateProject(project._id, formState);
+      if (response?.success) {
+        setProject(response.data);
+        showSuccess('Project updated');
+        setIsEditOpen(false);
+      } else {
+        throw new Error(response?.message || 'Failed to update project');
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to update project';
+      showError(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleShareProject = async () => {
@@ -397,18 +479,10 @@ export default function ProjectDetail({ projectId, onClose }) {
     }
   };
 
-  const handleExportProject = () => {
-    if (reports.length === 0) {
-      showError('No report available to export');
-      return;
-    }
-    handleDownloadReport(reports[0]);
-  };
-
   return (
     <div className={`project-detail-modal ${isPanelOpen ? 'is-open' : ''}`}>
       <div className="project-detail-backdrop" onClick={handleClose} />
-      <div className="project-detail-sheet">
+      <div className={`project-detail-sheet ${isDetailView ? 'is-analysis' : ''}`}>
         {isLoading ? (
           <div className="project-detail-loading">
             <div className="skeleton-wrapper">
@@ -426,344 +500,505 @@ export default function ProjectDetail({ projectId, onClose }) {
           </div>
         ) : (
           <>
-            <div className="project-detail-hero">
-              <div className="project-detail-hero-inner">
-                <div className="project-detail-hero-top">
-                  <button type="button" className="project-detail-back-link" onClick={handleClose}>
-                    <ArrowLeft size={16} /> Back to Projects
-                  </button>
+            {!activeAnalysisId && !activeReportId && (
+              <>
+                <ProjectBreadcrumbs
+                  onBack={handleClose}
+                  projectName={project?.name}
+                  className="project-detail-breadcrumbs-wrap"
+                />
+                <div className="project-detail-hero">
+                  <div className="project-detail-hero-inner">
+                    <div className="project-detail-hero-top">
+                      <div className="project-detail-hero-actions">
+                        <button
+                          type="button"
+                          className={`project-detail-icon-btn project-detail-star-btn ${isStarred ? 'is-starred' : ''}`}
+                          onClick={handleToggleStar}
+                          aria-label={isStarred ? 'Remove from favourites' : 'Add to favourites'}
+                          aria-pressed={isStarred}
+                        >
+                          <Star size={18} fill={isStarred ? '#f59e0b' : 'none'} color={isStarred ? '#f59e0b' : 'currentColor'} />
+                          <span className="project-detail-star-label">
+                            {isStarred ? 'Remove from favourite' : 'Add to favourite'}
+                          </span>
+                        </button>
+                        <button type="button" className="project-detail-ghost-btn" onClick={openEditModal}>
+                          <PencilLine size={16} />
+                          Edit
+                        </button>
+                        <button type="button" className="project-detail-cta-btn" onClick={handleShareProject}>
+                          <Share2 size={16} />
+                          Share
+                        </button>
+                      </div>
+                    </div>
 
-                  <div className="project-detail-hero-actions">
-                    <button type="button" className="project-detail-icon-btn" onClick={handleToggleStar} aria-label="Star project">
-                      <Star size={18} />
-                    </button>
-                    <button type="button" className="project-detail-ghost-btn" onClick={handleShareProject}>
-                      <Share2 size={16} />
-                      Share
-                    </button>
-                    <button type="button" className="project-detail-cta-btn" onClick={handleExportProject}>
-                      <Download size={16} />
-                      Export
-                    </button>
+                    <div className="project-detail-hero-title">
+                      <h1>{project.name || 'Untitled project'}</h1>
+                      {project.status ? (
+                        <span className={`project-detail-status status-${toBadgeSlug(project.status)}`}>
+                          {formatStatusLabel(project.status)}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="project-detail-hero-stats">
+                      <div className="project-detail-hero-card">
+                        <div className="hero-card-top">
+                          <BarChart3 size={24} color="#f97316" />
+                          <TrendingUp size={18} className="hero-card-trend" />
+                        </div>
+                        <div className="stat-value">{project?.analysisCount ?? analyses.length}</div>
+                        <div className="stat-label">Total Analyses</div>
+                      </div>
+                      <div className="project-detail-hero-card">
+                        <div className="hero-card-top">
+                          <MessageCircle size={20} />
+                        </div>
+                        <div className="stat-value">{totalPosts}</div>
+                        <div className="stat-label">Total Posts</div>
+                      </div>
+                      <div className="project-detail-hero-card">
+                        <div className="hero-card-top">
+                          <ThumbsUp size={20} />
+                          <TrendingUp size={18} className="hero-card-trend" />
+                        </div>
+                        <div className="stat-value">{avgSentimentScore}%</div>
+                        <div className="stat-label">Avg Sentiment</div>
+                      </div>
+                      <div className="project-detail-hero-card">
+                        <div className="hero-card-top">
+                          <Globe size={20} />
+                        </div>
+                        <div className="stat-value">{platformCount}</div>
+                        <div className="stat-label">Platforms</div>
+                      </div>
+                    </div>
+                    <div className="header-comments-row project-detail-comments-row">
+                      <HeaderComments
+                        entityType="project"
+                        entityId={project?._id}
+                        initialComments={project?.comments}
+                      />
+                    </div>
                   </div>
                 </div>
+              </>
+            )}
 
-                <div className="project-detail-hero-title">
-                  <h1>{project.name || 'Untitled project'}</h1>
-                  {project.status ? <span className="project-detail-status">{project.status}</span> : null}
-                </div>
-                <p className="project-detail-hero-subtitle">
-                  {project.description || 'No description provided yet.'}
-                </p>
-
-                <div className="project-detail-hero-meta">
-                  <div className="project-detail-hero-pill">
-                    <span className="pill-icon">
-                      <Hash size={16} />
-                    </span>
-                    <div>
-                      <span className="label">Category</span>
-                      <span className="value">{project.category || 'General'}</span>
-                    </div>
-                  </div>
-                  <div className="project-detail-hero-pill">
-                    <span className="pill-icon">
-                      <Calendar size={16} />
-                    </span>
-                    <div>
-                      <span className="label">Created</span>
-                      <span className="value">{formatDate(project.createdAt)}</span>
-                    </div>
-                  </div>
-                  <div className="project-detail-hero-pill">
-                    <span className="pill-icon">
-                      <Clock size={16} />
-                    </span>
-                    <div>
-                      <span className="label">Last activity</span>
-                      <span className="value">
-                        {formatRelativeTime(project.lastActivityAt || project.updatedAt || project.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="project-detail-hero-stats">
-                  <div className="project-detail-hero-card">
-                    <div className="hero-card-top">
-                      <BarChart2 size={20} />
-                      <TrendingUp size={18} className="hero-card-trend" />
-                    </div>
-                    <div className="stat-value">{project?.analysisCount ?? analyses.length}</div>
-                    <div className="stat-label">Total Analyses</div>
-                  </div>
-                  <div className="project-detail-hero-card">
-                    <div className="hero-card-top">
-                      <MessageCircle size={20} />
-                    </div>
-                    <div className="stat-value">{totalPosts}</div>
-                    <div className="stat-label">Total Posts</div>
-                  </div>
-                  <div className="project-detail-hero-card">
-                    <div className="hero-card-top">
-                      <ThumbsUp size={20} />
-                      <TrendingUp size={18} className="hero-card-trend" />
-                    </div>
-                    <div className="stat-value">{avgSentimentScore}%</div>
-                    <div className="stat-label">Avg Sentiment</div>
-                  </div>
-                  <div className="project-detail-hero-card">
-                    <div className="hero-card-top">
-                      <Globe size={20} />
-                    </div>
-                    <div className="stat-value">{platformCount}</div>
-                    <div className="stat-label">Platforms</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="project-detail-body">
+            <div className={`project-detail-body ${isDetailView ? 'is-analysis' : ''}`}>
               {activeAnalysisId ? (
                 <AnalysisDetailPanel
                   analysisId={activeAnalysisId}
                   projectId={projectId}
                   onBack={handleCloseAnalysis}
-                  backLabel="Back to Analyses"
+                  onRequestCloseProjectDetail={handleClose}
+                />
+              ) : activeReportId ? (
+                <ReportDetailPanel
+                  reportId={activeReportId}
+                  projectName={project?.name}
+                  onBack={handleCloseReport}
+                  onRequestCloseProjectDetail={handleClose}
+                  onDownload={handleDownloadReport}
                 />
               ) : (
-                <>
-              <div className="project-detail-tab-row">
-                <div className="project-detail-tabs">
-                  <Nav pills>
-                    <NavItem>
-                      <NavLink
-                        active={activeTab === 'analyses'}
-                        className={activeTab === 'analyses' ? 'active' : ''}
-                        onClick={() => setActiveTab('analyses')}
-                      >
-                        Analyses ({analyses.length})
-                      </NavLink>
-                    </NavItem>
-                    <NavItem>
-                      <NavLink
-                        active={activeTab === 'reports'}
-                        className={activeTab === 'reports' ? 'active' : ''}
-                        onClick={() => setActiveTab('reports')}
-                      >
-                        Reports ({reports.length})
-                      </NavLink>
-                    </NavItem>
-                  </Nav>
-                </div>
-
-                <div className="project-detail-search-inline-wrap">
-                  <div className={`project-detail-search-inline ${isSearchOpen ? 'open' : ''}`}>
-                    <Search size={16} className="project-detail-search-icon" />
-                    <input
-                      type="text"
-                      placeholder={`Search ${activeTab === 'analyses' ? 'analyses' : 'reports'}...`}
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="project-detail-tab-search"
-                    onClick={toggleSearch}
-                    aria-label="Search"
-                  >
-                    {isSearchOpen ? (
-                      <X size={18} className="project-detail-search-icon" />
-                    ) : (
-                      <Search size={18} className="project-detail-search-icon" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="project-detail-list mt-3">
-                {activeTab === 'analyses' && (
-                  <Card className="project-detail-card">
-                    <CardBody>
-                      {filteredAnalyses.length === 0 ? (
-                        <div className="text-center py-4 text-muted">
-                          {searchQuery ? 'No matching analyses found.' : 'No analyses have been assigned yet.'}
+                <div className="project-detail-panel-grid">
+                  <aside className="project-detail-aside">
+                    <div className="project-detail-aside-card">
+                      <div className="project-detail-aside-header">
+                        <span className="project-detail-aside-heading">Project snapshot</span>
+                      </div>
+                      <p className="project-detail-aside-description">
+                        {project.description || 'No description provided yet.'}
+                      </p>
+                      <div className="project-detail-aside-meta">
+                        <div className="project-detail-aside-meta-line">
+                          <span>Created</span>
+                          <strong>{formatDate(project.createdAt)}</strong>
                         </div>
-                      ) : (
-                        <div className="project-items">
-                          {filteredAnalyses.map((analysis) => {
-                            const distribution = analysis?.sentiment?.distribution || {};
-                            const sentiment = getDominantSentiment(
-                              analysis?.sentiment?.overall,
-                              distribution,
-                              analysis?.sentiment?.percentages
-                            );
-                            const positiveCount = Number(distribution?.positive) || 0;
-                            const neutralCount = Number(distribution?.neutral) || 0;
-                            const negativeCount = Number(distribution?.negative) || 0;
-                            const sentimentColor = getSentimentColor(sentiment);
-                            return (
-                              <div
-                                key={analysis._id}
-                                className="analysis-card analysis-card-clickable"
-                                onClick={() => handleViewAnalysis(analysis._id)}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter' || event.key === ' ') {
-                                    event.preventDefault();
-                                    handleViewAnalysis(analysis._id);
-                                  }
-                                }}
-                              >
-                                <div className="analysis-card-header">
-                                  <div className="analysis-card-left">
-                                    <div className="analysis-card-icon">
-                                      <MessageSquare size={22} />
+                        <div className="project-detail-aside-meta-line">
+                          <span>Last activity</span>
+                          <strong>
+                            {formatRelativeTime(project.lastActivityAt || project.updatedAt || project.createdAt)}
+                          </strong>
+                        </div>
+                        <div className="project-detail-aside-meta-line">
+                          <span>Owner</span>
+                          <strong>{ownerLabel}</strong>
+                        </div>
+                      </div>
+                      <div className="project-detail-aside-progress">
+                        <div className="project-detail-progress-label">Community pulse</div>
+                        <div className="project-detail-progress-track">
+                          <div
+                            className="project-detail-progress-fill"
+                            style={{ width: `${sentimentProgress}%` }}
+                          />
+                        </div>
+                        <p className="project-detail-progress-note">{sentimentLabel}</p>
+                      </div>
+                      <div className="project-detail-aside-chips">
+                        {projectChips.map((chip, index) => (
+                          <span key={`${chip}-${index}`} className="project-detail-chip">
+                            {chip}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="project-detail-aside-list">
+                        <div className="project-detail-aside-list-title">Recent reports</div>
+                        {recentReports.length ? (
+                          recentReports.map((report) => (
+                            <div key={report._id} className="project-detail-aside-list-item">
+                              <span>{report.query || report.title || 'Unnamed report'}</span>
+                              <small>{formatDate(report.createdAt)}</small>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="project-detail-aside-list-item muted">
+                            Export a report to keep this space updated.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </aside>
+
+                  <div className="project-detail-main-column">
+                    <div className="project-detail-tab-row">
+                      <div className="syn-pill-toggle">
+                        <Nav className="syn-pill-toggle-nav">
+                          <NavItem>
+                            <NavLink
+                              className={`syn-pill-toggle-btn ${activeTab === 'analyses' ? 'is-active' : ''}`}
+                              onClick={() => setActiveTab('analyses')}
+                            >
+                              <span>Analyses</span>
+                              <span className="syn-pill-toggle-count">{analyses.length}</span>
+                            </NavLink>
+                          </NavItem>
+                          <NavItem>
+                            <NavLink
+                              className={`syn-pill-toggle-btn ${activeTab === 'reports' ? 'is-active' : ''}`}
+                              onClick={() => setActiveTab('reports')}
+                            >
+                              <span>Reports</span>
+                              <span className="syn-pill-toggle-count">{reports.length}</span>
+                            </NavLink>
+                          </NavItem>
+                        </Nav>
+                      </div>
+
+                      <div className="project-detail-search-inline-wrap">
+                        <div className={`project-detail-search-inline ${isSearchOpen ? 'open' : ''}`}>
+                          <Search size={16} className="project-detail-search-icon" />
+                          <input
+                            type="text"
+                            placeholder={`Search ${activeTab === 'analyses' ? 'analyses' : 'reports'}...`}
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="project-detail-tab-search"
+                          onClick={toggleSearch}
+                          aria-label="Search"
+                        >
+                          {isSearchOpen ? (
+                            <X size={18} className="project-detail-search-icon" />
+                          ) : (
+                            <Search size={18} className="project-detail-search-icon" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="project-detail-list mt-3">
+                      {activeTab === 'analyses' && (
+                        <Card className="project-detail-card">
+                          <CardBody>
+                            {filteredAnalyses.length === 0 ? (
+                              <div className="text-center py-4 text-muted">
+                                {searchQuery ? 'No matching analyses found.' : 'No analyses have been assigned yet.'}
+                              </div>
+                            ) : (
+                              <div className="project-items">
+                                {filteredAnalyses.map((analysis) => {
+                                  const distribution = analysis?.sentiment?.distribution || {};
+                                  const sentiment = getDominantSentiment(
+                                    analysis?.sentiment?.overall,
+                                    distribution,
+                                    analysis?.sentiment?.percentages
+                                  );
+                                  const positiveCount = Number(distribution?.positive) || 0;
+                                  const neutralCount = Number(distribution?.neutral) || 0;
+                                  const negativeCount = Number(distribution?.negative) || 0;
+                                  const sentimentColor = getSentimentColor(sentiment);
+                                  return (
+                                    <div
+                                      key={analysis._id}
+                                      className="analysis-card analysis-card-clickable"
+                                      onClick={() => handleViewAnalysis(analysis._id)}
+                                      role="button"
+                                      tabIndex={0}
+                                      onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                          event.preventDefault();
+                                          handleViewAnalysis(analysis._id);
+                                        }
+                                      }}
+                                    >
+                                      <div className="analysis-card-header">
+                                        <div className="analysis-card-left">
+                                          <div className="analysis-card-icon analysis-card-icon--amber">
+                                            <BarChart3 size={22} color="#f97316" />
+                                          </div>
+                                          <div className="analysis-card-main">
+                                            <div className="analysis-card-title">{analysis.query || 'Untitled analysis'}</div>
+                                            <div className="analysis-card-meta">
+                                              <span className="analysis-card-source">
+                                                {formatSourceLabel(analysis.source)}
+                                              </span>
+                                              <span>•</span>
+                                              <span>{analysis.totalAnalyzed || 0} posts</span>
+                                              <span>•</span>
+                                              <span>{formatDate(analysis.createdAt)}</span>
+                                            </div>
+                                            <div className="analysis-card-counts">
+                                              <span className="analysis-card-count positive">+ {positiveCount}</span>
+                                              <span className="analysis-card-count neutral">~ {neutralCount}</span>
+                                              <span className="analysis-card-count negative">- {negativeCount}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="analysis-card-actions">
+                                          <span
+                                            className="analysis-card-sentiment"
+                                            style={{
+                                              color: sentimentColor,
+                                              borderColor: sentimentColor,
+                                              background: getSentimentTint(sentiment)
+                                            }}
+                                          >
+                                            {sentiment ? sentiment[0].toUpperCase() + sentiment.slice(1) : 'Unknown'}
+                                          </span>
+                                          <Button
+                                            color="primary"
+                                            className="analysis-card-view-btn"
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              handleGoToChat(analysis._id);
+                                            }}
+                                            disabled={redirectingAnalysisId === analysis._id}
+                                          >
+                                            {redirectingAnalysisId === analysis._id ? 'Opening...' : 'Go to chat'}
+                                          </Button>
+                                          <Button
+                                            color="light"
+                                            className="border analysis-card-icon-btn"
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              handleRemoveAnalysis(analysis._id);
+                                            }}
+                                            disabled={removingAnalysisId === analysis._id}
+                                          >
+                                            {removingAnalysisId === analysis._id ? (
+                                              <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
+                                            ) : (
+                                              <Trash2 size={16} />
+                                            )}
+                                          </Button>
+                                        </div>
+                                      </div>
+
                                     </div>
-                                    <div className="analysis-card-main">
-                                      <div className="analysis-card-title">{analysis.query || 'Untitled analysis'}</div>
-                                      <div className="analysis-card-meta">
-                                        <span className="analysis-card-source">
-                                          {formatSourceLabel(analysis.source)}
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </CardBody>
+                        </Card>
+                      )}
+
+                      {activeTab === 'reports' && (
+                        <Card className="project-detail-card">
+                          <CardBody>
+                            {filteredReports.length === 0 ? (
+                              <div className="text-center py-4 text-muted">
+                                {searchQuery ? 'No matching reports found.' : 'No reports have been assigned yet.'}
+                              </div>
+                            ) : (
+                              <div className="project-items">
+                                {filteredReports.map((report) => {
+                                  const sentiment = normalizeSentiment(report?.sentiment?.overall);
+                                  const sentimentColor = getSentimentColor(sentiment);
+                                  return (
+                                    <div key={report._id} className="project-item">
+                                      <div className="project-item-main">
+                                        <div className="project-item-title">{report.query || 'Untitled report'}</div>
+                                        <div className="project-item-meta">
+                                          <span>{report.totalAnalyzed || 0} posts</span>
+                                          <span>•</span>
+                                          <span>{formatDate(report.createdAt)}</span>
+                                        </div>
+                                      </div>
+                                      <div className="project-item-actions">
+                                        <span
+                                          className="sentiment-pill"
+                                          style={{
+                                            color: sentimentColor,
+                                            borderColor: sentimentColor,
+                                            background: getSentimentTint(sentiment)
+                                          }}
+                                        >
+                                          {sentiment ? sentiment[0].toUpperCase() + sentiment.slice(1) : 'Unknown'}
                                         </span>
-                                        <span>•</span>
-                                        <span>{analysis.totalAnalyzed || 0} posts</span>
-                                        <span>•</span>
-                                        <span>{formatDate(analysis.createdAt)}</span>
-                                      </div>
-                                      <div className="analysis-card-counts">
-                                        <span className="analysis-card-count positive">+ {positiveCount}</span>
-                                        <span className="analysis-card-count neutral">~ {neutralCount}</span>
-                                        <span className="analysis-card-count negative">- {negativeCount}</span>
+                                        <Button color="light" className="border" onClick={() => handleViewReport(report._id)}>
+                                          <Eye size={16} />
+                                        </Button>
+                                        <Button color="light" className="border" onClick={() => handleDownloadReport(report)}>
+                                          <Download size={16} />
+                                        </Button>
+                                        <Button
+                                          color="light"
+                                          className="border"
+                                          onClick={() => handleRemoveReport(report._id)}
+                                          disabled={removingReportId === report._id}
+                                        >
+                                          {removingReportId === report._id ? (
+                                            <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
+                                          ) : (
+                                            <Trash2 size={16} />
+                                          )}
+                                        </Button>
                                       </div>
                                     </div>
-                                  </div>
-
-                                  <div className="analysis-card-actions">
-                                    <span
-                                      className="analysis-card-sentiment"
-                                      style={{
-                                        color: sentimentColor,
-                                        borderColor: sentimentColor,
-                                        background: getSentimentTint(sentiment)
-                                      }}
-                                    >
-                                      {sentiment ? sentiment[0].toUpperCase() + sentiment.slice(1) : 'Unknown'}
-                                    </span>
-                                    <Button
-                                      color="primary"
-                                      className="analysis-card-view-btn"
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        handleGoToChat(analysis._id);
-                                      }}
-                                      disabled={redirectingAnalysisId === analysis._id}
-                                    >
-                                      {redirectingAnalysisId === analysis._id ? 'Opening...' : 'Go to chat'}
-                                    </Button>
-                                    <Button
-                                      color="light"
-                                      className="border analysis-card-icon-btn"
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        handleRemoveAnalysis(analysis._id);
-                                      }}
-                                      disabled={removingAnalysisId === analysis._id}
-                                    >
-                                      {removingAnalysisId === analysis._id ? (
-                                        <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
-                                      ) : (
-                                        <Trash2 size={16} />
-                                      )}
-                                    </Button>
-                                  </div>
-                                </div>
-
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
-                        </div>
+                            )}
+                          </CardBody>
+                        </Card>
                       )}
-                    </CardBody>
-                  </Card>
-                )}
-
-                {activeTab === 'reports' && (
-                  <Card className="project-detail-card">
-                    <CardBody>
-                      {filteredReports.length === 0 ? (
-                        <div className="text-center py-4 text-muted">
-                          {searchQuery ? 'No matching reports found.' : 'No reports have been assigned yet.'}
-                        </div>
-                      ) : (
-                        <div className="project-items">
-                          {filteredReports.map((report) => {
-                            const sentiment = normalizeSentiment(report?.sentiment?.overall);
-                            return (
-                              <div key={report._id} className="project-item">
-                                <div className="project-item-main">
-                                  <div className="project-item-title">{report.query || 'Untitled report'}</div>
-                                  <div className="project-item-meta">
-                                    <span>{report.totalAnalyzed || 0} posts</span>
-                                    <span>•</span>
-                                    <span>{formatDate(report.createdAt)}</span>
-                                  </div>
-                                </div>
-                                <div className="project-item-actions">
-                                  <span
-                                    className="sentiment-pill"
-                                    style={{ color: getSentimentColor(sentiment) }}
-                                  >
-                                    {sentiment ? sentiment[0].toUpperCase() + sentiment.slice(1) : 'Unknown'}
-                                  </span>
-                                  <Button color="light" className="border" onClick={() => handleViewReport(report._id)}>
-                                    <Eye size={16} />
-                                  </Button>
-                                  <Button color="light" className="border" onClick={() => handleDownloadReport(report)}>
-                                    <Download size={16} />
-                                  </Button>
-                                  <Button
-                                    color="light"
-                                    className="border"
-                                    onClick={() => handleRemoveReport(report._id)}
-                                    disabled={removingReportId === report._id}
-                                  >
-                                    {removingReportId === report._id ? (
-                                      <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
-                                    ) : (
-                                      <Trash2 size={16} />
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </CardBody>
-                  </Card>
-                )}
-              </div>
-                </>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </>
         )}
       </div>
 
-      <ReportModal
-        isOpen={isReportModalOpen}
-        toggle={closeReportModal}
-        isGenerating={isReportLoading}
-        report={activeReport}
-        error={reportError}
-        onDownload={() => activeReport && handleDownloadReport(activeReport)}
-        loadingTitle="Loading Report..."
-        loadingDescription="Fetching the saved report content."
-        successMessage="Report ready"
-      />
+      <div className={`project-form-modal ${isEditOpen ? 'is-open' : ''}`}>
+        <div className="project-form-backdrop" onClick={() => setIsEditOpen(false)} />
+        <div className="project-form-sheet">
+          <div className="project-form-header">
+            <h4 className="project-form-title">Edit Project</h4>
+            <button
+              type="button"
+              className="project-form-close"
+              onClick={() => setIsEditOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="project-form-body">
+            <div className="project-form-grid project-form-grid-top">
+              <FormGroup>
+                <Label for="project-detail-name-input">Project name</Label>
+                <Input
+                  id="project-detail-name-input"
+                  value={formState.name}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter a project name"
+                  invalid={Boolean(formErrors.name)}
+                />
+                {formErrors.name ? <div className="project-form-error">{formErrors.name}</div> : null}
+              </FormGroup>
+              <FormGroup>
+                <Label for="project-detail-starred-input">Add to favourite</Label>
+                <Input
+                  id="project-detail-starred-input"
+                  type="select"
+                  value={formState.isStarred ? 'yes' : 'no'}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, isStarred: e.target.value === 'yes' }))}
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </Input>
+              </FormGroup>
+            </div>
+            <div className="project-form-grid">
+              <FormGroup>
+                <div className="project-form-label-row">
+                  <Label for="project-detail-category-input">Category</Label>
+                  <span
+                    className={`project-form-badge ${formState.category ? getCategoryBadgeClass(formState.category) : 'is-empty'}`.trim()}
+                  >
+                    {formState.category || 'Uncategorized'}
+                  </span>
+                </div>
+                <BadgeSelect
+                  id="project-detail-category-input"
+                  value={formState.category}
+                  options={CATEGORY_OPTIONS}
+                  placeholder="Select a category"
+                  hasError={Boolean(formErrors.category)}
+                  getBadgeClass={getCategoryBadgeClass}
+                  onChange={(value) => setFormState((prev) => ({ ...prev, category: value }))}
+                />
+                {formErrors.category ? <div className="project-form-error">{formErrors.category}</div> : null}
+              </FormGroup>
+              <FormGroup>
+                <div className="project-form-label-row">
+                  <Label for="project-detail-status-input">Status</Label>
+                  <span
+                    className={`project-form-badge ${formState.status ? getStatusBadgeClass(formState.status) : 'is-empty'}`.trim()}
+                  >
+                    {formState.status || 'Unset'}
+                  </span>
+                </div>
+                <BadgeSelect
+                  id="project-detail-status-input"
+                  value={formState.status}
+                  options={STATUS_OPTIONS}
+                  placeholder="Select a status"
+                  hasError={Boolean(formErrors.status)}
+                  getBadgeClass={getStatusBadgeClass}
+                  onChange={(value) => setFormState((prev) => ({ ...prev, status: value }))}
+                />
+                {formErrors.status ? <div className="project-form-error">{formErrors.status}</div> : null}
+              </FormGroup>
+            </div>
+            <FormGroup>
+              <Label for="project-detail-description-input">Description</Label>
+              <Input
+                id="project-detail-description-input"
+                type="textarea"
+                rows="6"
+                value={formState.description}
+                onChange={(e) => setFormState((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Optional description"
+              />
+            </FormGroup>
+          </div>
+          <div className="project-form-footer">
+            <Button color="light" onClick={() => setIsEditOpen(false)} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button color="primary" className="project-form-save" onClick={handleSaveProject} disabled={isSaving}>
+              {isSaving ? (
+                <span className="skeleton-line skeleton-inline" style={{ width: '44px', height: '12px' }} />
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

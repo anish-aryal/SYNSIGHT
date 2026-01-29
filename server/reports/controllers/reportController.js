@@ -15,6 +15,8 @@ const buildReportFilename = (report) => {
   return `sentiment-report-${slug || 'analysis'}-${Date.now()}.pdf`;
 };
 
+const normalizeCommentText = (value) => (typeof value === 'string' ? value.trim() : '');
+
 export const generateReport = async (req, res) => {
   try {
     const { data } = req.body;
@@ -281,6 +283,36 @@ export const updateReportProject = async (req, res) => {
   }
 };
 
+export const updateReportContent = async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (typeof content !== 'string' || !content.trim()) {
+      return sendErrorResponse(res, 'Report content is required', 400);
+    }
+
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, status: 'generated' },
+      { content },
+      { new: true }
+    ).populate('project', 'name');
+
+    if (!report) {
+      return sendErrorResponse(res, 'Report not found', 404);
+    }
+
+    const projectId = report.project?._id || report.project;
+    if (projectId) {
+      await Project.findByIdAndUpdate(projectId, { lastActivityAt: new Date() });
+    }
+
+    return sendSuccessResponse(res, 'Report updated successfully', report);
+  } catch (error) {
+    console.error('Update report content error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to update report', 500);
+  }
+};
+
 export const downloadReportPdf = async (req, res) => {
   try {
     const { id } = req.params;
@@ -312,5 +344,72 @@ export const downloadReportPdf = async (req, res) => {
   } catch (error) {
     console.error('Report PDF generation error:', error);
     return sendErrorResponse(res, error.message || 'Failed to generate report PDF', 500);
+  }
+};
+
+export const addReportComment = async (req, res) => {
+  try {
+    const text = normalizeCommentText(req.body?.text);
+    if (!text) {
+      return sendErrorResponse(res, 'Comment text is required', 400);
+    }
+
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, status: 'generated' },
+      { $push: { comments: { text } } },
+      { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!report) {
+      return sendErrorResponse(res, 'Report not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment added', report.comments);
+  } catch (error) {
+    console.error('Add report comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to add comment', 500);
+  }
+};
+
+export const updateReportComment = async (req, res) => {
+  try {
+    const text = normalizeCommentText(req.body?.text);
+    if (!text) {
+      return sendErrorResponse(res, 'Comment text is required', 400);
+    }
+
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, status: 'generated', 'comments._id': req.params.commentId },
+      { $set: { 'comments.$.text': text } },
+      { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!report) {
+      return sendErrorResponse(res, 'Comment not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment updated', report.comments);
+  } catch (error) {
+    console.error('Update report comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to update comment', 500);
+  }
+};
+
+export const deleteReportComment = async (req, res) => {
+  try {
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, status: 'generated', 'comments._id': req.params.commentId },
+      { $pull: { comments: { _id: req.params.commentId } } },
+      { new: true }
+    );
+
+    if (!report) {
+      return sendErrorResponse(res, 'Comment not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment deleted', report.comments);
+  } catch (error) {
+    console.error('Delete report comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to delete comment', 500);
   }
 };

@@ -8,7 +8,7 @@ import {
   Row,
   Col
 } from 'reactstrap';
-import { FileText, Download, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, X, CheckCircle, AlertCircle, FolderPlus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export default function ReportModal({
@@ -18,6 +18,7 @@ export default function ReportModal({
   report,
   error,
   onDownload,
+  onAddToProject,
   loadingTitle = 'Generating Report...',
   loadingDescription = 'AI is analyzing the data and creating insights. This may take 15-30 seconds.',
   successMessage = 'Report generated successfully'
@@ -92,6 +93,12 @@ export default function ReportModal({
               <X size={16} className="me-1" />
               Close
             </Button>
+            {onAddToProject ? (
+              <Button color="secondary" outline onClick={onAddToProject}>
+                <FolderPlus size={16} className="me-1" />
+                Add to Project
+              </Button>
+            ) : null}
             <Button color="primary" onClick={onDownload}>
               <Download size={16} className="me-1" />
               Download

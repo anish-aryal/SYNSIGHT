@@ -3,6 +3,12 @@ import Analysis from '../../sentimentAnalysis/models/Analysis.js';
 import Report from '../../reports/models/Report.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
+const buildOwnerInfo = (user) => ({
+  id: user?._id,
+  name: user?.fullName || user?.name || undefined,
+  email: user?.email || undefined
+});
+
 const buildCountsMap = (items = []) => {
   const map = new Map();
   items.forEach((entry) => {
@@ -13,12 +19,19 @@ const buildCountsMap = (items = []) => {
   return map;
 };
 
+const normalizeCommentText = (value) => (typeof value === 'string' ? value.trim() : '');
+
 export const createProject = async (req, res) => {
   try {
-    const { name, description = '', category = 'General', isStarred = false } = req.body;
+    const { name, description = '', category = 'General', isStarred = false, status } = req.body;
 
     if (!name || !name.trim()) {
       return sendErrorResponse(res, 'Project name is required', 400);
+    }
+
+    const normalizedStatus = typeof status === 'string' ? status.trim().toLowerCase() : undefined;
+    if (normalizedStatus && !['active', 'archived', 'deleted', 'draft', 'paused', 'completed'].includes(normalizedStatus)) {
+      return sendErrorResponse(res, 'Invalid project status', 400);
     }
 
     const project = await Project.create({
@@ -26,13 +39,19 @@ export const createProject = async (req, res) => {
       name: name.trim(),
       description: description?.trim() || '',
       category: category?.trim() || 'General',
-      isStarred: Boolean(isStarred)
+      isStarred: Boolean(isStarred),
+      ...(normalizedStatus ? { status: normalizedStatus } : {})
     });
 
     return sendSuccessResponse(
       res,
       'Project created successfully',
-      { ...project.toObject(), analysisCount: 0, reportCount: 0 },
+      {
+        ...project.toObject(),
+        analysisCount: 0,
+        reportCount: 0,
+        owner: buildOwnerInfo(req.user)
+      },
       201
     );
   } catch (error) {
@@ -68,10 +87,12 @@ export const getProjects = async (req, res) => {
     const analysisMap = buildCountsMap(analysisCounts);
     const reportMap = buildCountsMap(reportCounts);
 
+    const ownerInfo = buildOwnerInfo(req.user);
     const response = projects.map((project) => ({
       ...project.toObject(),
       analysisCount: analysisMap.get(String(project._id)) || 0,
-      reportCount: reportMap.get(String(project._id)) || 0
+      reportCount: reportMap.get(String(project._id)) || 0,
+      owner: ownerInfo
     }));
 
     return sendSuccessResponse(res, 'Projects fetched successfully', response);
@@ -101,7 +122,8 @@ export const getProjectById = async (req, res) => {
     return sendSuccessResponse(res, 'Project fetched successfully', {
       ...project.toObject(),
       analysisCount,
-      reportCount
+      reportCount,
+      owner: buildOwnerInfo(req.user)
     });
   } catch (error) {
     console.error('Get project error:', error);
@@ -112,11 +134,12 @@ export const getProjectById = async (req, res) => {
 export const updateProject = async (req, res) => {
   try {
     const { name, description, category, isStarred, status } = req.body;
+    const normalizedStatus = typeof status === 'string' ? status.trim().toLowerCase() : status;
 
     if (name !== undefined && (!name || !name.trim())) {
       return sendErrorResponse(res, 'Project name is required', 400);
     }
-    if (status !== undefined && !['active', 'archived', 'deleted'].includes(status)) {
+    if (normalizedStatus !== undefined && !['active', 'archived', 'deleted', 'draft', 'paused', 'completed'].includes(normalizedStatus)) {
       return sendErrorResponse(res, 'Invalid project status', 400);
     }
 
@@ -125,7 +148,7 @@ export const updateProject = async (req, res) => {
     if (description !== undefined) updateData.description = description?.trim() || '';
     if (category !== undefined) updateData.category = category?.trim() || 'General';
     if (isStarred !== undefined) updateData.isStarred = Boolean(isStarred);
-    if (status !== undefined) updateData.status = status;
+    if (normalizedStatus !== undefined) updateData.status = normalizedStatus;
 
     if (Object.keys(updateData).length > 0) {
       updateData.lastActivityAt = new Date();
@@ -149,7 +172,8 @@ export const updateProject = async (req, res) => {
     return sendSuccessResponse(res, 'Project updated successfully', {
       ...project.toObject(),
       analysisCount,
-      reportCount
+      reportCount,
+      owner: buildOwnerInfo(req.user)
     });
   } catch (error) {
     console.error('Update project error:', error);
@@ -237,5 +261,82 @@ export const getProjectReports = async (req, res) => {
   } catch (error) {
     console.error('Get project reports error:', error);
     return sendErrorResponse(res, error.message || 'Failed to fetch project reports', 500);
+  }
+};
+
+export const addProjectComment = async (req, res) => {
+  try {
+    const text = normalizeCommentText(req.body?.text);
+    if (!text) {
+      return sendErrorResponse(res, 'Comment text is required', 400);
+    }
+
+    const project = await Project.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id, status: { $ne: 'deleted' } },
+      { $push: { comments: { text } }, $set: { lastActivityAt: new Date() } },
+      { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!project) {
+      return sendErrorResponse(res, 'Project not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment added', project.comments);
+  } catch (error) {
+    console.error('Add project comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to add comment', 500);
+  }
+};
+
+export const updateProjectComment = async (req, res) => {
+  try {
+    const text = normalizeCommentText(req.body?.text);
+    if (!text) {
+      return sendErrorResponse(res, 'Comment text is required', 400);
+    }
+
+    const project = await Project.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user: req.user._id,
+        status: { $ne: 'deleted' },
+        'comments._id': req.params.commentId
+      },
+      { $set: { 'comments.$.text': text, lastActivityAt: new Date() } },
+      { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!project) {
+      return sendErrorResponse(res, 'Comment not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment updated', project.comments);
+  } catch (error) {
+    console.error('Update project comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to update comment', 500);
+  }
+};
+
+export const deleteProjectComment = async (req, res) => {
+  try {
+    const project = await Project.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user: req.user._id,
+        status: { $ne: 'deleted' },
+        'comments._id': req.params.commentId
+      },
+      { $pull: { comments: { _id: req.params.commentId } }, $set: { lastActivityAt: new Date() } },
+      { new: true }
+    );
+
+    if (!project) {
+      return sendErrorResponse(res, 'Comment not found', 404);
+    }
+
+    return sendSuccessResponse(res, 'Comment deleted', project.comments);
+  } catch (error) {
+    console.error('Delete project comment error:', error);
+    return sendErrorResponse(res, error.message || 'Failed to delete comment', 500);
   }
 };

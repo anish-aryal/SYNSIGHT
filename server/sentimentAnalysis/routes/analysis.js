@@ -10,7 +10,10 @@ import {
   deleteAnalysis,
   getStatistics,
   updateAnalysisProject,
-  refreshAnalysis
+  refreshAnalysis,
+  addAnalysisComment,
+  updateAnalysisComment,
+  deleteAnalysisComment
 } from '../controller/analysis.js';
 import { protect } from '../../middlewares/auth.js';
 
@@ -31,5 +34,8 @@ router.get('/:id', getAnalysisById);
 router.post('/:id/refresh', refreshAnalysis);
 router.delete('/:id', deleteAnalysis);
 router.patch('/:id/project', updateAnalysisProject);
+router.post('/:id/comments', addAnalysisComment);
+router.patch('/:id/comments/:commentId', updateAnalysisComment);
+router.delete('/:id/comments/:commentId', deleteAnalysisComment);
 
 export default router;

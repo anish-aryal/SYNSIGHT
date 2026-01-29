@@ -35,6 +35,26 @@ export const updateReportProject = async (id, projectId) => {
   return response.data;
 };
 
+export const updateReportContent = async (id, content) => {
+  const response = await api.patch(`/reports/${id}`, { content });
+  return response.data;
+};
+
+export const addReportComment = async (id, text) => {
+  const response = await api.post(`/reports/${id}/comments`, { text });
+  return response.data;
+};
+
+export const updateReportComment = async (id, commentId, text) => {
+  const response = await api.patch(`/reports/${id}/comments/${commentId}`, { text });
+  return response.data;
+};
+
+export const deleteReportComment = async (id, commentId) => {
+  const response = await api.delete(`/reports/${id}/comments/${commentId}`);
+  return response.data;
+};
+
 export default {
   generateReport,
   getReports,
@@ -42,5 +62,9 @@ export default {
   getReportByAnalysisId,
   deleteReport,
   downloadReportPdf,
-  updateReportProject
+  updateReportProject,
+  updateReportContent,
+  addReportComment,
+  updateReportComment,
+  deleteReportComment
 };

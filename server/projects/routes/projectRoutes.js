@@ -6,7 +6,10 @@ import {
   updateProject,
   deleteProject,
   getProjectAnalyses,
-  getProjectReports
+  getProjectReports,
+  addProjectComment,
+  updateProjectComment,
+  deleteProjectComment
 } from '../controllers/projectController.js';
 import { protect } from '../../middlewares/auth.js';
 
@@ -19,6 +22,9 @@ router.get('/', getProjects);
 router.get('/:id', getProjectById);
 router.get('/:id/analyses', getProjectAnalyses);
 router.get('/:id/reports', getProjectReports);
+router.post('/:id/comments', addProjectComment);
+router.patch('/:id/comments/:commentId', updateProjectComment);
+router.delete('/:id/comments/:commentId', deleteProjectComment);
 router.put('/:id', updateProject);
 router.delete('/:id', deleteProject);
 

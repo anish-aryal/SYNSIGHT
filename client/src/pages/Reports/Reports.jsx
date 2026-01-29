@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Container, Row, Col, Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import ReportsList from './components/ReportsList';
 import EmptyReports from './components/EmptyReports';
-import ReportModal from '../Chat/components/ReportModal';
+import ReportDetailPanel from '../Projects/ReportDetail';
 import reportService from '../../api/services/reportService';
 import projectService from '../../api/services/projectService';
 import { useApp } from '../../api/context/AppContext';
@@ -25,9 +25,8 @@ export default function Reports() {
   const [listError, setListError] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeReport, setActiveReport] = useState(null);
-  const [isReportLoading, setIsReportLoading] = useState(false);
-  const [modalError, setModalError] = useState(null);
+  const [activeReportId, setActiveReportId] = useState(null);
+  const [activeReportMeta, setActiveReportMeta] = useState(null);
   const [viewingReportId, setViewingReportId] = useState(null);
   const [downloadingReportId, setDownloadingReportId] = useState(null);
   const [deletingReportId, setDeletingReportId] = useState(null);
@@ -38,8 +37,6 @@ export default function Reports() {
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsSaving, setProjectsSaving] = useState(false);
-
-  const reportCacheRef = useRef({});
 
   const fetchReports = useCallback(async () => {
     setIsLoading(true);
@@ -66,6 +63,15 @@ export default function Reports() {
     fetchReports();
   }, [fetchReports]);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isModalOpen]);
+
   const filteredReports = reports.filter((report) => {
     const query = report?.query || report?.title || '';
     const projectName = report?.project?.name || '';
@@ -74,19 +80,6 @@ export default function Reports() {
   });
 
   const getReportId = (report) => report?._id || report?.id;
-
-  const fetchReportDetails = async (reportId) => {
-    const cached = reportCacheRef.current[reportId];
-    if (cached?.content) return cached;
-
-    const response = await reportService.getReportById(reportId);
-    if (response?.success && response.data) {
-      reportCacheRef.current[reportId] = response.data;
-      return response.data;
-    }
-
-    throw new Error(response?.message || 'Failed to load report');
-  };
 
   const buildReportFilename = (report) => {
     const nameSource = report?.query || report?.title || 'analysis';
@@ -112,30 +105,20 @@ export default function Reports() {
     return true;
   };
 
-  const handleViewReport = async (report) => {
+  const handleViewReport = (report) => {
     const reportId = getReportId(report);
     if (!reportId) {
       showError('Report ID missing');
       return;
     }
 
-    setIsModalOpen(true);
-    setActiveReport(null);
-    setModalError(null);
-    setIsReportLoading(true);
     setViewingReportId(reportId);
-
-    try {
-      const fullReport = await fetchReportDetails(reportId);
-      setActiveReport(fullReport);
-    } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Failed to load report';
-      setModalError(message);
-      showError(message);
-    } finally {
-      setIsReportLoading(false);
+    setActiveReportId(reportId);
+    setActiveReportMeta(report || null);
+    setIsModalOpen(true);
+    requestAnimationFrame(() => {
       setViewingReportId(null);
-    }
+    });
   };
 
   const handleDownloadReport = async (report) => {
@@ -160,14 +143,14 @@ export default function Reports() {
     }
   };
 
-  const handleDownloadActiveReport = async () => {
-    if (!activeReport) {
+  const handleDownloadFromDetail = async (report) => {
+    if (!report) {
       showError('Report content is unavailable for download');
       return;
     }
 
     try {
-      await downloadReportFile(activeReport);
+      await downloadReportFile(report);
       showSuccess('Report downloaded');
     } catch (err) {
       const message = err.response?.data?.message || err.message || 'Failed to download report';
@@ -243,13 +226,11 @@ export default function Reports() {
     }
   };
 
-  const toggleModal = () => {
-    if (isReportLoading) return;
-    setIsModalOpen((prev) => !prev);
-    if (isModalOpen) {
-      setActiveReport(null);
-      setModalError(null);
-    }
+  const closeReportDetail = () => {
+    setIsModalOpen(false);
+    setActiveReportId(null);
+    setActiveReportMeta(null);
+    setViewingReportId(null);
   };
 
   const handleDeleteReport = async (report) => {
@@ -276,9 +257,6 @@ export default function Reports() {
     try {
       const response = await reportService.deleteReport(reportId);
       if (response?.success) {
-        // Clear cache for deleted report
-        delete reportCacheRef.current[reportId];
-
         // Update state to remove the deleted report without reloading
         setReports((prevReports) => prevReports.filter((r) => getReportId(r) !== reportId));
 
@@ -349,17 +327,22 @@ export default function Reports() {
         </Row>
       </Container>
 
-      <ReportModal
-        isOpen={isModalOpen}
-        toggle={toggleModal}
-        isGenerating={isReportLoading}
-        report={activeReport}
-        error={modalError}
-        onDownload={handleDownloadActiveReport}
-        loadingTitle="Loading Report..."
-        loadingDescription="Fetching the saved report content."
-        successMessage="Report ready"
-      />
+      {isModalOpen && activeReportId ? (
+        <div className="project-detail-modal is-open">
+          <div className="project-detail-backdrop" onClick={closeReportDetail} />
+          <div className="project-detail-sheet is-analysis">
+            <ReportDetailPanel
+              reportId={activeReportId}
+              projectName={activeReportMeta?.project?.name}
+              onBack={closeReportDetail}
+              onRequestCloseProjectDetail={closeReportDetail}
+              onDownload={handleDownloadFromDetail}
+              rootLabel="Reports"
+              showProjectCrumb={false}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <Modal isOpen={isDeleteModalOpen} toggle={cancelDelete} centered>
         <ModalHeader toggle={cancelDelete}>Delete Report</ModalHeader>

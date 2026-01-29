@@ -6,6 +6,7 @@ import ProjectsGrid from './components/ProjectsGrid';
 import projectService from '../../api/services/projectService';
 import { useApp } from '../../api/context/AppContext';
 import ProjectDetail from './ProjectDetail';
+import BadgeSelect, { CATEGORY_OPTIONS, STATUS_OPTIONS, getCategoryBadgeClass, getStatusBadgeClass } from '../../components/projects/BadgeSelect';
 
 export default function Projects() {
   const { showError, showSuccess } = useApp();
@@ -90,12 +91,16 @@ export default function Projects() {
   }, [location.pathname, location.state, navigate, openCreateModal]);
 
   const openEditModal = (project) => {
+    const normalizedCategory = typeof project?.category === 'string' ? project.category.trim().toLowerCase() : '';
+    const normalizedStatus = typeof project?.status === 'string' ? project.status.trim().toLowerCase() : '';
+    const nextCategory = CATEGORY_OPTIONS.find((option) => option.toLowerCase() === normalizedCategory) || '';
+    const nextStatus = STATUS_OPTIONS.find((option) => option.toLowerCase() === normalizedStatus) || STATUS_OPTIONS[0];
     setActiveProject(project);
     setFormState({
       name: project?.name || '',
       description: project?.description || '',
-      category: project?.category || '',
-      status: project?.status || 'Active',
+      category: nextCategory,
+      status: nextStatus,
       isStarred: Boolean(project?.isStarred)
     });
     setFormErrors({});
@@ -197,24 +202,24 @@ export default function Projects() {
                 onButtonClick={openCreateModal}
               />
               <div className="projects-hero-footer">
-                <div className="projects-tabs-wrapper">
-                  <Nav className="projects-tabs">
+                <div className="projects-tabs-wrapper syn-pill-toggle">
+                  <Nav className="projects-tabs syn-pill-toggle-nav">
                     <NavItem>
                       <NavLink
-                        className={`projects-tab ${activeView === 'favorites' ? 'is-active' : ''}`}
+                        className={`projects-tab syn-pill-toggle-btn ${activeView === 'favorites' ? 'is-active' : ''}`}
                         onClick={() => setActiveView('favorites')}
                       >
                         <span className="projects-tab-label">Favorites</span>
-                        <span className="projects-tab-count">{starredProjects.length}</span>
+                        <span className="projects-tab-count syn-pill-toggle-count">{starredProjects.length}</span>
                       </NavLink>
                     </NavItem>
                     <NavItem>
                       <NavLink
-                        className={`projects-tab ${activeView === 'all' ? 'is-active' : ''}`}
+                        className={`projects-tab syn-pill-toggle-btn ${activeView === 'all' ? 'is-active' : ''}`}
                         onClick={() => setActiveView('all')}
                       >
                         <span className="projects-tab-label">All</span>
-                        <span className="projects-tab-count">{filteredProjects.length}</span>
+                        <span className="projects-tab-count syn-pill-toggle-count">{filteredProjects.length}</span>
                       </NavLink>
                     </NavItem>
                   </Nav>
@@ -308,38 +313,43 @@ export default function Projects() {
             </div>
             <div className="project-form-grid">
               <FormGroup>
-                <Label for="project-category-input">Category</Label>
-                <Input
+                <div className="project-form-label-row">
+                  <Label for="project-category-input">Category</Label>
+                  <span
+                    className={`project-form-badge ${formState.category ? getCategoryBadgeClass(formState.category) : 'is-empty'}`.trim()}
+                  >
+                    {formState.category || 'Uncategorized'}
+                  </span>
+                </div>
+                <BadgeSelect
                   id="project-category-input"
-                  type="select"
                   value={formState.category}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, category: e.target.value }))}
-                  invalid={Boolean(formErrors.category)}
-                >
-                  <option value="">Select a category</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Research">Research</option>
-                  <option value="Product">Product</option>
-                  <option value="Customer Success">Customer Success</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Other">Other</option>
-                </Input>
+                  options={CATEGORY_OPTIONS}
+                  placeholder="Select a category"
+                  hasError={Boolean(formErrors.category)}
+                  getBadgeClass={getCategoryBadgeClass}
+                  onChange={(value) => setFormState((prev) => ({ ...prev, category: value }))}
+                />
                 {formErrors.category ? <div className="project-form-error">{formErrors.category}</div> : null}
               </FormGroup>
               <FormGroup>
-                <Label for="project-status-input">Status</Label>
-                <Input
+                <div className="project-form-label-row">
+                  <Label for="project-status-input">Status</Label>
+                  <span
+                    className={`project-form-badge ${formState.status ? getStatusBadgeClass(formState.status) : 'is-empty'}`.trim()}
+                  >
+                    {formState.status || 'Unset'}
+                  </span>
+                </div>
+                <BadgeSelect
                   id="project-status-input"
-                  type="select"
                   value={formState.status}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, status: e.target.value }))}
-                  invalid={Boolean(formErrors.status)}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Paused">Paused</option>
-                  <option value="Completed">Completed</option>
-                </Input>
+                  options={STATUS_OPTIONS}
+                  placeholder="Select a status"
+                  hasError={Boolean(formErrors.status)}
+                  getBadgeClass={getStatusBadgeClass}
+                  onChange={(value) => setFormState((prev) => ({ ...prev, status: value }))}
+                />
                 {formErrors.status ? <div className="project-form-error">{formErrors.status}</div> : null}
               </FormGroup>
             </div>
