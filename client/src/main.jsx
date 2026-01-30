@@ -21,7 +21,6 @@ import Register from './pages/Auth/Register';
 import Landing from './pages/Landing/Landing';
 import VerifyOTP from './pages/Auth/VerifyOTP';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import DesignSystem from './pages/DesignSystem';
 import './index.css';
 
 // Client entry, providers, and routing setup.
@@ -35,7 +34,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Routes>
             {/* Public Route */}
             <Route path="/" element={<Landing />} />
-            <Route path="/design-system" element={<DesignSystem />} />
 
             {/* Guest Only Routes */}
             <Route element={<GuestRoute />}>

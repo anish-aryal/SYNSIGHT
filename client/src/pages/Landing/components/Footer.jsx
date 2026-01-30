@@ -31,8 +31,7 @@ const resources = [
   { label: 'Resources', href: '/resources' },
   { label: 'Case Studies', href: '/case-studies' },
   { label: 'Events', href: '/events' },
-  { label: 'Careers', href: '/careers' },
-  { label: 'Design System', href: '/design-system' }
+  { label: 'Careers', href: '/careers' }
 ];
 
 const locations = [
