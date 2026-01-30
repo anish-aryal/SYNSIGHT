@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { loginUser, registerUser, verifyOtp as verifyOtpService, resendOtp as resendOtpService, logoutUser } from '../services/authService';
 
+// Auth context state and actions.
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -9,6 +11,12 @@ export function AuthProvider({ children }) {
   );
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [authLoading, setAuthLoading] = useState(false);
+
+  const clearLogoutFlags = () => {
+    sessionStorage.removeItem('loggedOut');
+    sessionStorage.removeItem('sessionExpired');
+    sessionStorage.removeItem('suppressSessionExpired');
+  };
 
   // Sync logout across tabs
   useEffect(() => {
@@ -29,6 +37,7 @@ export function AuthProvider({ children }) {
         onLoggedIn: (res) => {
           setToken(res.token);
           setUser(res.data);
+          clearLogoutFlags();
         },
       });
     } finally {
@@ -52,6 +61,7 @@ export function AuthProvider({ children }) {
         onVerified: (res) => {
           setToken(res.token);
           setUser(res.data);
+          clearLogoutFlags();
         },
       });
     } finally {

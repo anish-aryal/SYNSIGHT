@@ -1,7 +1,9 @@
-import React from 'react';
 import { Card } from 'reactstrap';
-import { ChevronLeft, BarChart3, TrendingUp, Users, Zap } from 'lucide-react';
+import { ChevronLeft, TrendingUp, Users, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import SynsightLogo from '../../../components/SynsightLogo';
+
+// Auth Left Panel UI block for Auth page.
 
 export default function AuthLeftPanel() {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export default function AuthLeftPanel() {
     }
   ];
 
+  // Layout and appearance
   return (
     <Card className="auth-left-card border-0">
       <div className="auth-left-content">
@@ -33,8 +36,8 @@ export default function AuthLeftPanel() {
         </div>
 
         <div className="auth-branding">
-          <div className="auth-logo gradient-primary">
-            <BarChart3 size={28} color="white" />
+          <div className="auth-logo">
+            <SynsightLogo className="auth-logo-mark" />
           </div>
           
           <h2 className="auth-brand-name">SYNSIGHT</h2>

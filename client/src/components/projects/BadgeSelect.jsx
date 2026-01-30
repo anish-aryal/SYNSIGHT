@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+// Badge Select component for projects UI.
+
 export const CATEGORY_OPTIONS = [
   'General',
   'Marketing',
@@ -53,6 +55,7 @@ export default function BadgeSelect({
     };
     document.addEventListener('mousedown', handleOutside);
     document.addEventListener('keydown', handleEscape);
+    // Layout and appearance
     return () => {
       document.removeEventListener('mousedown', handleOutside);
       document.removeEventListener('keydown', handleEscape);

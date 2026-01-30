@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { 
+
   Container, 
   Row, 
   Col, 
@@ -19,42 +20,22 @@ import {
 } from 'lucide-react';
 import { useChat } from '../../../api/context/ChatContext';
 
-const RedditIcon = ({ size = 18, ...props }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+// Chat Header UI block for Chat page.
+
+const RedditIcon = ({ size = 18, className = '', ...props }) => (
+  <i
+    className={`bi bi-reddit ${className}`.trim()}
+    style={{ fontSize: size, lineHeight: 1 }}
     {...props}
-  >
-    <circle cx="12" cy="13" r="5" />
-    <circle cx="9.6" cy="13" r="0.9" fill="currentColor" stroke="none" />
-    <circle cx="14.4" cy="13" r="0.9" fill="currentColor" stroke="none" />
-    <path d="M10.5 15.6c.9.8 2.1.8 3 0" />
-    <path d="M15 9l2.2-1.6" />
-    <circle cx="18.2" cy="6.4" r="1" />
-  </svg>
+  />
 );
 
-const BlueskyIcon = ({ size = 18, ...props }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+const BlueskyIcon = ({ size = 18, className = '', ...props }) => (
+  <i
+    className={`bi bi-bluesky ${className}`.trim()}
+    style={{ fontSize: size, lineHeight: 1 }}
     {...props}
-  >
-    <path d="M12 12c-2.8-2.8-6.2-2.3-6.2.4 0 2.7 2.6 4.4 6.2 4.4" />
-    <path d="M12 12c2.8-2.8 6.2-2.3 6.2.4 0 2.7-2.6 4.4-6.2 4.4" />
-  </svg>
+  />
 );
 
 export default function ChatHeader({ onNewChat, isInitial }) {
@@ -75,6 +56,7 @@ export default function ChatHeader({ onNewChat, isInitial }) {
 
   const handlePlatformSelect = (platformId) => setSelectedPlatform(platformId);
 
+  // Layout and appearance
   return (
     <Container fluid className="chat-header">
       <Row className="align-items-center">

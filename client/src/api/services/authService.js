@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Auth Service API client helpers.
+
 // Login
 export const loginUser = async (credentials, { onLoggedIn, onOtpRequired } = {}) => {
   try {
@@ -92,6 +94,9 @@ export const resendOtp = async (payload) => {
 // Logout
 export const logoutUser = async () => {
   try {
+    sessionStorage.setItem('loggedOut', 'true');
+    sessionStorage.setItem('suppressSessionExpired', 'true');
+    sessionStorage.removeItem('sessionExpired');
     await api.post('/auth/logout');
   } catch (error) {
     console.error('Logout error:', error);

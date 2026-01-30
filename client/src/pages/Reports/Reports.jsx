@@ -9,6 +9,8 @@ import projectService from '../../api/services/projectService';
 import { useApp } from '../../api/context/AppContext';
 import ProjectPickerModal from '../../components/projects/ProjectPickerModal';
 
+// Reports page layout and interactions.
+
 const getFilenameFromHeaders = (headers) => {
   const disposition = headers?.['content-disposition'] || headers?.get?.('content-disposition');
   if (!disposition) return null;
@@ -67,6 +69,7 @@ export default function Reports() {
     if (!isModalOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Layout and appearance
     return () => {
       document.body.style.overflow = previousOverflow;
     };

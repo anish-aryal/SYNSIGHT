@@ -8,6 +8,8 @@ import { useApp } from '../../api/context/AppContext';
 import ProjectDetail from './ProjectDetail';
 import BadgeSelect, { CATEGORY_OPTIONS, STATUS_OPTIONS, getCategoryBadgeClass, getStatusBadgeClass } from '../../components/projects/BadgeSelect';
 
+// Projects page layout and interactions.
+
 export default function Projects() {
   const { showError, showSuccess } = useApp();
   const navigate = useNavigate();
@@ -184,6 +186,7 @@ export default function Projects() {
     }
   };
 
+  // Layout and appearance
   return (
     <div className="syn-page projects-page">
       <Container className="syn-page-container">

@@ -3,7 +3,10 @@ import { Outlet } from 'react-router-dom';
 import { Container, Row, Col } from 'reactstrap';
 import Sidebar from '../components/Sidebar/Sidebar';
 
+// App Layout layout wrapper and page chrome.
+
 export default function AppLayout() {
+  // Layout and appearance
   return (
     <>
       <Sidebar mode="mobile" />

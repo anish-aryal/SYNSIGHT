@@ -2,7 +2,10 @@ import React from 'react';
 import { Row, Col, Badge } from 'reactstrap';
 import { Clock } from 'lucide-react';
 
+// Recent Searches UI block for Chat page.
+
 export default function RecentSearches({ searches, onSearchClick }) {
+  // Layout and appearance
   return (
     <div className="topics-card">
       <Row className="mb-3">

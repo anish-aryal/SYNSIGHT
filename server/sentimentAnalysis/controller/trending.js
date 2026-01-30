@@ -2,6 +2,8 @@ import { searchPosts } from '../services/bluesky.js';
 import { getTrendingRaw } from '../services/blueskyTrending.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
+// Trending request handlers.
+
 const calculateEngagement = (post) => {
   return (post.metrics?.like_count || 0) * 1 +
          (post.metrics?.repost_count || 0) * 2 +

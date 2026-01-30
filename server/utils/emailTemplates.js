@@ -1,3 +1,5 @@
+// Email Templates utility helpers.
+
 export const otpEmailTemplate = (fullName, otp) => {
   return `
     <!DOCTYPE html>
@@ -91,7 +93,7 @@ export const welcomeEmailTemplate = (fullName) => {
               <!-- Content -->
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="margin: 0 0 20px; color: #1a1a1a; font-size: 24px;">Welcome to SYNSIGHT! 🎉</h2>
+                  <h2 style="margin: 0 0 20px; color: #1a1a1a; font-size: 24px;">Welcome to SYNSIGHT!</h2>
                   <p style="margin: 0 0 20px; color: #666666; font-size: 16px; line-height: 1.6;">
                     Hi ${fullName},
                   </p>
@@ -205,7 +207,7 @@ export const loginOtpTemplate = (name, otp) => {
           </div>
 
           <div class="warning">
-            <strong>⚠️ Security Notice:</strong> If you did not attempt to log in, please ignore this email and consider changing your password immediately.
+            <strong>Security Notice:</strong> If you did not attempt to log in, please ignore this email and consider changing your password immediately.
           </div>
 
           <p>For your security:</p>

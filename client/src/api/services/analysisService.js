@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Analysis Service API client helpers.
+
 const PLATFORM_ENDPOINTS = {
   twitter: '/analysis/twitter',
   reddit: '/analysis/reddit',

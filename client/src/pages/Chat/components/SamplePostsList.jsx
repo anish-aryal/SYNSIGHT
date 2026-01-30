@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, CardBody } from 'reactstrap';
 import { CheckCircle, XCircle, MinusCircle } from 'lucide-react';
 
+// Sample Posts List UI block for Chat page.
+
 export default function SamplePostsList({ posts, pageSize = 5 }) {
   if (!posts || posts.length === 0) return null;
   const [expandedPosts, setExpandedPosts] = useState(() => new Set());
@@ -49,6 +51,7 @@ export default function SamplePostsList({ posts, pageSize = 5 }) {
   const endIndex = Math.min(startIndex + pageSize, totalPosts);
   const pagePosts = posts.slice(startIndex, endIndex);
 
+  // Layout and appearance
   return (
     <Card className="section-card">
       <CardBody className="p-0">

@@ -10,6 +10,8 @@ import {
   Label
 } from 'reactstrap';
 
+// Project Picker Modal component for projects UI.
+
 export default function ProjectPickerModal({
   isOpen,
   toggle,
@@ -72,6 +74,7 @@ export default function ProjectPickerModal({
     });
   };
 
+  // Layout and appearance
   return (
     <Modal isOpen={isOpen} toggle={toggle} size="lg" className="project-picker-modal">
       <ModalHeader toggle={toggle} className="project-picker-header">

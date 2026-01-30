@@ -2,6 +2,8 @@ import express from 'express';
 import { register, login, logout, getMe, verifyOTP, resendOTP } from '../controllers/auth.js';
 import { protect } from '../middlewares/auth.js';
 
+// Auth route definitions.
+
 const router = express.Router();
 
 router.post('/register', register);

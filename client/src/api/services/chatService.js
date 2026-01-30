@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Chat Service API client helpers.
+
 export const createChat = async (data = {}) => {
   const response = await api.post('/chats', data);
   return response.data;

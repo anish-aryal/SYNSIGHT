@@ -1,5 +1,7 @@
 import { TwitterApi } from 'twitter-api-v2';
 
+// Twitter service helpers.
+
 let bearer = null;
 
 const initializeTwitter = async () => {
@@ -17,13 +19,13 @@ const initializeTwitter = async () => {
 const generateMockTweets = (query, count) => {
   const templates = {
     positive: [
-      `${query} is absolutely amazing! Best decision ever 🔥`,
+      `${query} is absolutely amazing! Best decision ever.`,
       `Can't believe how good ${query} is. Highly recommend!`,
       `Just discovered ${query} and I'm impressed. Great work!`,
       `${query} exceeded all my expectations. Love it!`,
       `Shoutout to ${query} for being consistently excellent`,
       `${query} is the future. Mark my words.`,
-      `Finally tried ${query} and wow, just wow! 👏`,
+      `Finally tried ${query} and wow, just wow.`,
       `${query} never disappoints. Always delivering quality.`,
       `Big fan of ${query}. Keep up the great work!`,
       `${query} changed my perspective completely. Amazing!`
@@ -101,11 +103,11 @@ export const searchTweets = async (query, maxResults = 100) => {
     });
 
     if (!tweets.data?.data || tweets.data.data.length === 0) {
-      console.log('⚠️ No tweets found, using mock data');
+      console.log('Warning: No tweets found, using mock data');
       return generateMockTweets(query, maxResults);
     }
 
-    console.log(`✅ Fetched ${tweets.data.data.length} real tweets`);
+    console.log(`Fetched ${tweets.data.data.length} real tweets`);
 
     return tweets.data.data.map(tweet => ({
       text: tweet.text,
@@ -114,7 +116,7 @@ export const searchTweets = async (query, maxResults = 100) => {
       id: tweet.id
     }));
   } catch (error) {
-    console.warn('⚠️ Twitter API failed, using mock data:', error.message);
+    console.warn('Warning: Twitter API failed, using mock data:', error.message);
     return generateMockTweets(query, maxResults);
   }
 };
@@ -130,7 +132,7 @@ export const getUserTweets = async (username, maxResults = 100) => {
     });
 
     if (!tweets.data?.data || tweets.data.data.length === 0) {
-      console.log('⚠️ No user tweets found, using mock data');
+      console.log('Warning: No user tweets found, using mock data');
       return generateMockTweets(username, maxResults);
     }
 
@@ -141,7 +143,7 @@ export const getUserTweets = async (username, maxResults = 100) => {
       id: tweet.id
     }));
   } catch (error) {
-    console.warn('⚠️ Twitter API failed, using mock data:', error.message);
+    console.warn('Warning: Twitter API failed, using mock data:', error.message);
     return generateMockTweets(username, maxResults);
   }
 };
@@ -167,7 +169,7 @@ export const getTweetReplies = async (tweetId, maxResults = 100) => {
         id: tweet.id
       }));
   } catch (error) {
-    console.warn('⚠️ Twitter API failed, using mock data:', error.message);
+    console.warn('Warning: Twitter API failed, using mock data:', error.message);
     return generateMockTweets('reply', maxResults);
   }
 };

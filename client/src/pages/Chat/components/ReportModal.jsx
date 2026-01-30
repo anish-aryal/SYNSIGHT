@@ -11,6 +11,8 @@ import {
 import { FileText, Download, X, CheckCircle, AlertCircle, FolderPlus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
+// Report Modal UI block for Chat page.
+
 export default function ReportModal({
   isOpen,
   toggle,
@@ -23,6 +25,7 @@ export default function ReportModal({
   loadingDescription = 'AI is analyzing the data and creating insights. This may take 15-30 seconds.',
   successMessage = 'Report generated successfully'
 }) {
+  // Layout and appearance
   return (
     <Modal isOpen={isOpen} toggle={!isGenerating ? toggle : undefined} size="lg" className="report-modal">
       <ModalHeader toggle={!isGenerating ? toggle : undefined} className="report-modal-header">

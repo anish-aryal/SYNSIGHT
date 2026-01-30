@@ -9,6 +9,8 @@ import { generateInsights } from '../utils/InsightsGenerator.js';
 
 import { adjustForSarcasm } from '../utils/sarcasmDetector.js';
 
+// Orchestrator service helpers.
+
 const TIMEFRAME_MS = {
   last24hours: 24 * 60 * 60 * 1000,
   last7days: 7 * 24 * 60 * 60 * 1000,
@@ -376,7 +378,7 @@ const analyzePlatformCore = async ({
   const individual = Array.isArray(analysis.individual_results) ? analysis.individual_results : [];
   const total = analysis.total_analyzed || postsForAnalysis.length || 0;
 
-  // ✅ Apply sarcasm adjustment per post (aligned by index)
+  // Apply sarcasm adjustment per post (aligned by index)
   const enrichedResults = new Array(postsForAnalysis.length);
   for (let i = 0; i < postsForAnalysis.length; i++) {
     const r = individual[i] || {};
@@ -397,18 +399,18 @@ const analyzePlatformCore = async ({
     };
   }
 
-  // ✅ Recompute distribution/percentages from adjusted sentiments for consistency
+  // Recompute distribution/percentages from adjusted sentiments for consistency
   const dist = recomputeDistribution(enrichedResults);
   const percentages = total > 0 ? calcPercentages(dist, total) : { positive: 0, negative: 0, neutral: 0 };
 
-  // ✅ Determine overall sentiment from adjusted compound average
+  // Determine overall sentiment from adjusted compound average
   const average_scores = recomputeAverages(enrichedResults);
 
   let overall_sentiment = 'neutral';
   if (average_scores.compound >= 0.05) overall_sentiment = 'positive';
   else if (average_scores.compound <= -0.05) overall_sentiment = 'negative';
 
-  // ✅ Sarcasm stats
+  // Sarcasm stats
   const sarcasmDetectedCount = enrichedResults.filter(r => r?.sarcasmDetected).length;
   const sarcasmRatePercent = total > 0 ? Math.round((sarcasmDetectedCount / total) * 100) : 0;
 
@@ -630,7 +632,7 @@ export const analyzeMultiplePlatforms = async (query, maxResults = 100, options 
       removedByFilters: 0
     });
 
-    // ✅ Combine sarcasm stats
+    // Combine sarcasm stats
     const sarcasmDetectedTotal = ok.reduce((s, r) => s + (r.sarcasm?.detected || 0), 0);
     const sarcasmRatePercent = total > 0 ? Math.round((sarcasmDetectedTotal / total) * 100) : 0;
 

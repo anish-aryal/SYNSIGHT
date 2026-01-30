@@ -2,6 +2,8 @@ import React from 'react';
 import { Row, Col } from 'reactstrap';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
+// Overall Sentiment UI block for Chat page.
+
 export default function OverallSentiment({ percentages }) {
   if (!percentages) return null;
 
@@ -11,6 +13,7 @@ export default function OverallSentiment({ percentages }) {
     { name: 'Positive', value: percentages.positive || 0, color: '#10b981' }
   ];
 
+  // Layout and appearance
   return (
     <Row className="justify-content-center">
       <Col xs={12}>

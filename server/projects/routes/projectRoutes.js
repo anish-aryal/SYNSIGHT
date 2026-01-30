@@ -13,6 +13,8 @@ import {
 } from '../controllers/projectController.js';
 import { protect } from '../../middlewares/auth.js';
 
+// Project route definitions.
+
 const router = express.Router();
 
 router.use(protect);

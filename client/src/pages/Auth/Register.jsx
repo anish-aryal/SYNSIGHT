@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, FormGroup, Label, Input, Button, Alert } from 'reactstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLeftPanel from './components/AuthLeftPanel';
-import SocialLoginButtons from './components/SocialLoginButtons';
+import SynsightLogo from '../../components/SynsightLogo';
+
+// Register page layout and interactions.
 
 export default function Register() {
   const navigate = useNavigate();
@@ -72,14 +74,7 @@ export default function Register() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google signup');
-  };
-
-  const handleFacebookLogin = () => {
-    console.log('Facebook signup');
-  };
-
+  // Layout and appearance
   return (
     <div className="auth-page">
       <Container>
@@ -90,24 +85,21 @@ export default function Register() {
 
               <Card className="auth-right-card border-0 shadow-sm">
                 <div className="auth-form-container">
-                  <div className="mb-4">
-                    <h2 className="fw-bold mb-2">Create account</h2>
-                    <p className="text-muted mb-0">Get started with sentiment analysis</p>
+                  <div className="auth-mobile-brand">
+                    <div className="auth-mobile-logo">
+                      <SynsightLogo className="auth-logo-mark" />
+                    </div>
+                    <span className="auth-mobile-name">SYNSIGHT</span>
+                  </div>
+                  <div className="auth-form-header">
+                    <h2 className="auth-form-title">Create account</h2>
+                    <p className="auth-form-subtitle">Get started with sentiment analysis</p>
                   </div>
 
                   {error && <Alert color="danger" className="py-2 mb-3">{error}</Alert>}
 
-                  <SocialLoginButtons 
-                    onGoogleClick={handleGoogleLogin}
-                    onFacebookClick={handleFacebookLogin}
-                  />
-
-                  <div className="auth-divider">
-                    <span>OR CONTINUE WITH EMAIL</span>
-                  </div>
-
                   <Form onSubmit={handleSubmit}>
-                    <FormGroup>
+                    <FormGroup className="auth-form-group">
                       <Label for="fullName" className="fw-medium mb-2">Full Name</Label>
                       <Input
                         type="text"
@@ -121,7 +113,7 @@ export default function Register() {
                       />
                     </FormGroup>
 
-                    <FormGroup>
+                    <FormGroup className="auth-form-group">
                       <Label for="email" className="fw-medium mb-2">Email address</Label>
                       <Input
                         type="email"
@@ -135,7 +127,7 @@ export default function Register() {
                       />
                     </FormGroup>
 
-                    <FormGroup>
+                    <FormGroup className="auth-form-group">
                       <Label for="password" className="fw-medium mb-2">Password</Label>
                       <Input
                         type="password"
@@ -150,7 +142,7 @@ export default function Register() {
                       <small className="text-muted">Must be at least 8 characters</small>
                     </FormGroup>
 
-                    <FormGroup>
+                    <FormGroup className="auth-form-group">
                       <Label for="confirmPassword" className="fw-medium mb-2">Confirm Password</Label>
                       <Input
                         type="password"
@@ -166,7 +158,7 @@ export default function Register() {
 
                     <Button 
                       type="submit" 
-                      className="auth-submit-btn gradient-primary border-0 w-100 mt-3"
+                      className="auth-submit-btn gradient-primary border-0 w-100"
                       disabled={loading}
                     >
                       {loading ? 'Creating Account...' : 'Create Account'}

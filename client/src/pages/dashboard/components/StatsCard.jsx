@@ -1,7 +1,10 @@
 import React from 'react';
 import { Card, CardBody } from 'reactstrap';
 
+// Stats Card UI block for Dashboard page.
+
 export default function StatsCard({ icon: Icon, label, value, change, color, isLoading = false }) {
+  // Layout and appearance
   return (
     <Card className="stat-card h-100">
       <CardBody>

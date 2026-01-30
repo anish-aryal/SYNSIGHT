@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, CardBody, Button } from 'reactstrap';
 import { Folder } from 'lucide-react';
 
+// Recent Projects UI block for Dashboard page.
+
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
   const parsed = new Date(value);
@@ -49,6 +51,7 @@ export default function RecentProjects({
   const safeProjects = Array.isArray(projects) ? projects : [];
   const visibleProjects = safeProjects.slice(0, 3);
 
+  // Layout and appearance
   return (
     <Card>
       <CardBody>

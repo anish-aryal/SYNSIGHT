@@ -10,6 +10,8 @@ import SkeletonLoader from './components/SkeletonLoader';
 import { Sparkles } from 'lucide-react';
 import { useChat } from '../../api/context/ChatContext';
 
+// Chat page layout and interactions.
+
 export default function Chat() {
   const { chatId } = useParams();
   const navigate = useNavigate();
@@ -125,6 +127,7 @@ export default function Chat() {
 
   // Initial State - Welcome Screen
   if (isInitialState) {
+    // Layout and appearance
     return (
       <div className="chat-wrapper">
         <ChatHeader onNewChat={handleNewChat} isInitial />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'reactstrap';
 import { 
+
   Share2, 
   FolderPlus, 
   Download,
@@ -13,6 +14,8 @@ import reportService from '../../../api/services/reportService';
 import projectService from '../../../api/services/projectService';
 import ReportModal from './ReportModal';
 import ProjectPickerModal from '../../../components/projects/ProjectPickerModal';
+
+// Action Bar UI block for Chat page.
 
 export default function ActionBar({ query, results, onCompare, onRefresh }) {
   const { showSuccess, showError } = useApp();
@@ -226,6 +229,7 @@ export default function ActionBar({ query, results, onCompare, onRefresh }) {
 
   const hasExistingReport = !!existingReport;
 
+  // Layout and appearance
   return (
     <>
       <div className="action-bar d-flex gap-2 mt-4 pt-3 border-top">

@@ -18,8 +18,8 @@ const DISCOURSE_MARKERS = [
   'good luck with that', 'of course', 'obviously', 'right...', 'sure...', 'totally', 'literally'
 ];
 
-// Emoji + reactions (social sarcasm cues)
-const SARCASM_EMOJIS = ['🙄','😒','😑','🤷','👍','😏','🤦','🤦‍♂️','🤦‍♀️','🤡','💀','🫠','🤨','😂'];
+// Reaction markers (emoji cues removed)
+const SARCASM_EMOJIS = [];
 
 // Some common “fixed” sarcasm phrases still help, but keep the list short.
 // You do NOT want to maintain 500 phrases.

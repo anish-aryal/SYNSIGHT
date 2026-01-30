@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, CardBody, Row, Col } from 'reactstrap';
 import { PlusSquare, FileText, BarChart3, TrendingUp } from 'lucide-react';
 
+// Quick Actions UI block for Dashboard page.
+
 export default function QuickActions({ onAction }) {
   const actions = [
     { id: 'new-project', icon: PlusSquare, title: 'New Project', desc: 'Create a new workspace' },
@@ -10,6 +12,7 @@ export default function QuickActions({ onAction }) {
     { id: 'explore-trends', icon: TrendingUp, title: 'Explore Trends', desc: 'Trending topics' }
   ];
 
+  // Layout and appearance
   return (
     <Card className="h-100">
       <CardBody>

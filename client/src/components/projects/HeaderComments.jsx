@@ -15,6 +15,8 @@ import projectService from '../../api/services/projectService';
 import * as analysisService from '../../api/services/analysisService';
 import reportService from '../../api/services/reportService';
 
+// Header Comments component for projects UI.
+
 const SERVICE_MAP = {
   project: {
     add: projectService.addProjectComment,
@@ -180,6 +182,7 @@ export default function HeaderComments({
     }
   };
 
+  // Layout and appearance
   return (
     <div
       className={`header-comments ${!isOpen ? 'is-collapsed' : ''} ${className}`.trim()}

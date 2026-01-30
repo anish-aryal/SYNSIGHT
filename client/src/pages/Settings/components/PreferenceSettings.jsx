@@ -4,6 +4,8 @@ import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
 import { updatePreferences } from '../../../api/services/profileService';
 
+// Preference Settings UI block for Settings page.
+
 export default function PreferencesSettings() {
   const { user, updateUser } = useAuth();
   const { showSuccess, showError, showInfo } = useApp();
@@ -131,6 +133,7 @@ export default function PreferencesSettings() {
     { value: 'np', label: 'Nepali' }
   ];
 
+  // Layout and appearance
   return (
     <Card className="p-3 border-1 shadow-sm">
       <CardHeader className="bg-white border-bottom py-3">
@@ -154,7 +157,7 @@ export default function PreferencesSettings() {
             value={preferences.defaultTimeRange}
             onChange={(e) => handleChange('defaultTimeRange', e.target.value)}
             disabled={loading}
-            className="bg-light border-0"
+            className="settings-input"
           >
             {timeRangeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -175,7 +178,7 @@ export default function PreferencesSettings() {
             value={preferences.defaultPlatform}
             onChange={(e) => handleChange('defaultPlatform', e.target.value)}
             disabled={loading}
-            className="bg-light border-0"
+            className="settings-input"
           >
             {platformOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -196,7 +199,7 @@ export default function PreferencesSettings() {
             value={preferences.theme}
             onChange={(e) => handleChange('theme', e.target.value)}
             disabled={loading}
-            className="bg-light border-0"
+            className="settings-input"
           >
             {themeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -217,7 +220,7 @@ export default function PreferencesSettings() {
             value={preferences.language}
             onChange={(e) => handleChange('language', e.target.value)}
             disabled={loading}
-            className="bg-light border-0"
+            className="settings-input"
           >
             {languageOptions.map(option => (
               <option key={option.value} value={option.value}>

@@ -1,7 +1,10 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 
+// Analysis Steps UI block for Chat page.
+
 export default function AnalysisSteps({ steps, currentStep }) {
+  // Layout and appearance
   return (
     <div className="mb-3">
       {steps.map((step, index) => {

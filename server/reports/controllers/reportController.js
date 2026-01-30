@@ -5,6 +5,8 @@ import Analysis from '../../sentimentAnalysis/models/Analysis.js';
 import Project from '../../projects/models/Project.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
+// Report request handlers.
+
 const buildReportFilename = (report) => {
   const nameSource = report?.query || report?.title || 'analysis';
   const slug = nameSource

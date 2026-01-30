@@ -40,6 +40,8 @@ import ProjectBreadcrumbs from '../../components/projects/ProjectBreadcrumbs';
 import HeaderComments from '../../components/projects/HeaderComments';
 import BadgeSelect, { CATEGORY_OPTIONS, STATUS_OPTIONS, getCategoryBadgeClass, getStatusBadgeClass, toBadgeSlug } from '../../components/projects/BadgeSelect';
 
+// Project Detail page layout and interactions.
+
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
   const parsed = new Date(value);
@@ -203,6 +205,7 @@ export default function ProjectDetail({ projectId, onClose }) {
   const ownerLabel = useMemo(() => {
     if (!project) return 'Unknown owner';
     if (typeof project.owner === 'string') return project.owner || 'Unknown owner';
+    // Layout and appearance
     return (
       project.owner?.name ||
       project.owner?.fullName ||

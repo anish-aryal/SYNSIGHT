@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardBody, Button, Row, Col, Dropdown, DropdownToggle, DropdownMenu, DropdownItem } from 'reactstrap';
 import { BarChart2, Star, MoreVertical, FileText, Folder } from 'lucide-react';
 
+// Projects Grid UI block for Projects page.
+
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
   const parsed = new Date(value);
@@ -36,6 +38,7 @@ export default function ProjectsGrid({
 }) {
   const [openMenuId, setOpenMenuId] = useState(null);
 
+  // Layout and appearance
   return (
     <div>
       <div className="projects-grid-header">

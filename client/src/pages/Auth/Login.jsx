@@ -4,7 +4,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../api/context/AuthContext';
 import { useApp } from '../../api/context/AppContext';
 import AuthLeftPanel from './components/AuthLeftPanel';
-import SocialLoginButtons from './components/SocialLoginButtons';
+import SynsightLogo from '../../components/SynsightLogo';
+
+// Login page layout and interactions.
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,6 +24,12 @@ export default function Login() {
 
   // Check for session expiry on mount
   useEffect(() => {
+    const loggedOut = sessionStorage.getItem('loggedOut') === 'true';
+    if (loggedOut) {
+      sessionStorage.removeItem('loggedOut');
+      sessionStorage.removeItem('sessionExpired');
+      return;
+    }
     const sessionExpired = sessionStorage.getItem('sessionExpired');
     if (sessionExpired === 'true') {
       // Show in both Alert and Toast
@@ -86,14 +94,7 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login');
-  };
-
-  const handleFacebookLogin = () => {
-    console.log('Facebook login');
-  };
-
+  // Layout and appearance
   return (
     <div className="auth-page">
       <Container>
@@ -104,9 +105,15 @@ export default function Login() {
 
               <Card className="auth-right-card border-0 shadow-sm">
                 <div className="auth-form-container">
-                  <div className="mb-4">
-                    <h2 className="fw-bold mb-2">Welcome back</h2>
-                    <p className="text-muted mb-0">Sign in to continue your analysis</p>
+                  <div className="auth-mobile-brand">
+                    <div className="auth-mobile-logo">
+                      <SynsightLogo className="auth-logo-mark" />
+                    </div>
+                    <span className="auth-mobile-name">SYNSIGHT</span>
+                  </div>
+                  <div className="auth-form-header">
+                    <h2 className="auth-form-title">Welcome back</h2>
+                    <p className="auth-form-subtitle">Sign in to continue your analysis</p>
                   </div>
 
                   {error && (
@@ -115,17 +122,8 @@ export default function Login() {
                     </Alert>
                   )}
 
-                  <SocialLoginButtons
-                    onGoogleClick={handleGoogleLogin}
-                    onFacebookClick={handleFacebookLogin}
-                  />
-
-                  <div className="auth-divider">
-                    <span>OR CONTINUE WITH EMAIL</span>
-                  </div>
-
                   <Form onSubmit={handleSubmit}>
-                    <FormGroup>
+                    <FormGroup className="auth-form-group">
                       <Label for="email" className="fw-medium mb-2">Email address</Label>
                       <Input
                         type="email"
@@ -140,7 +138,7 @@ export default function Login() {
                       />
                     </FormGroup>
 
-                    <FormGroup>
+                    <FormGroup className="auth-form-group">
                       <div className="d-flex justify-content-between mb-2">
                         <Label for="password" className="fw-medium mb-0">Password</Label>
                         <Link to="/forgot-password" className="auth-forgot-link">
@@ -162,7 +160,7 @@ export default function Login() {
 
                     <Button
                       type="submit"
-                      className="auth-submit-btn gradient-primary border-0 w-100 mt-4"
+                      className="auth-submit-btn gradient-primary border-0 w-100"
                       disabled={authLoading}
                     >
                       {authLoading ? 'Signing in...' : 'Sign In'}

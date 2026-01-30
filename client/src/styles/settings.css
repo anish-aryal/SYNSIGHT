@@ -7,6 +7,51 @@
   background-color: var(--color-neutral-bg);
 }
 
+.settings-page .form-control,
+.settings-page .form-select,
+.settings-page .settings-input {
+  background-color: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+  box-shadow: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.settings-page .form-control::placeholder,
+.settings-page .form-select::placeholder,
+.settings-page .settings-input::placeholder {
+  color: #94a3b8;
+}
+
+.settings-page .form-control:focus,
+.settings-page .form-select:focus,
+.settings-page .settings-input:focus {
+  background-color: transparent;
+  border-color: rgba(21, 93, 252, 0.45);
+  box-shadow: none;
+}
+
+.settings-page .form-control:disabled,
+.settings-page .form-select:disabled,
+.settings-page .settings-input:disabled {
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: none;
+}
+
+.settings-page .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.settings-page small.text-muted {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+}
+
 .settings-page .gradient-primary:hover {
   opacity: 0.9;
   transform: translateY(-1px);
@@ -20,15 +65,44 @@
 
 .settings-page .form-check-input:focus {
   box-shadow: none;
-  border-color: #6366f1;
+  border-color: transparent;
 }
 
 .settings-page .form-switch .form-check-input {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='white'/%3e%3c/svg%3e");
+  width: 2.8rem;
+  height: 1.5rem;
+  background-color: #e5e7eb;
+  border: 0;
+  border-radius: 999px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-5 -5 10 10'%3e%3ccircle r='4.2' fill='white'/%3e%3c/svg%3e");
+  background-size: 1.05rem 1.05rem;
+  background-repeat: no-repeat;
+  background-position: 0.2rem center;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.55), inset 0 1px 2px rgba(15, 23, 42, 0.12);
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background-position 180ms ease;
+  cursor: pointer;
 }
 
 .settings-page .form-switch .form-check-input:checked {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='white'/%3e%3c/svg%3e");
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-5 -5 10 10'%3e%3ccircle r='4.2' fill='white'/%3e%3c/svg%3e"), var(--gradient-primary);
+  background-size: 1.05rem 1.05rem, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+  background-position: calc(100% - 0.2rem) center, center;
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(21, 93, 252, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.settings-page .form-switch .form-check-input:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.settings-page .form-switch .form-check-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
 }
 
 .settings-page .syn-pill-toggle {

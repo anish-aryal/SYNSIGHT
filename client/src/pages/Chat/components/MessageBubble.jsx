@@ -1,6 +1,8 @@
 import React from 'react';
 import { Sparkles, User } from 'lucide-react';
 
+// Message Bubble UI block for Chat page.
+
 export default function MessageBubble({ message, children }) {
   const isUser = message.type === 'user';
   const formatTime = (value) => {
@@ -11,6 +13,7 @@ export default function MessageBubble({ message, children }) {
   };
   const timeLabel = formatTime(message.createdAt);
 
+  // Layout and appearance
   return (
     <div className={`message-row ${isUser ? 'user' : 'ai'}`}>
       <div className={`message-row-inner ${isUser ? 'user' : 'ai'}`}>

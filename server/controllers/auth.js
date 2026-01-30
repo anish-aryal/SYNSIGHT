@@ -17,6 +17,8 @@ import {
 } from '../helpers/responseHelpers.js';
 import Session from '../models/Session.js';
 
+// Auth request handlers.
+
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public

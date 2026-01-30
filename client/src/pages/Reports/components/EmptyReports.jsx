@@ -3,9 +3,12 @@ import { Button } from 'reactstrap';
 import { Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// Empty Reports UI block for Reports page.
+
 export default function EmptyReports() {
   const navigate = useNavigate();
 
+  // Layout and appearance
   return (
     <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
       <div 

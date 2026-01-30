@@ -2,6 +2,8 @@ import Chat from '../models/Chat.js';
 import Analysis from '../sentimentAnalysis/models/Analysis.js';
 import Report from '../reports/models/Report.js';
 
+// Chat request handlers.
+
 // @desc    Create new chat
 // @route   POST /api/chats
 // @access  Private

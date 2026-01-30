@@ -24,6 +24,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import DesignSystem from './pages/DesignSystem';
 import './index.css';
 
+// Client entry, providers, and routing setup.
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AppProvider>
@@ -51,7 +53,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   </ChatProvider>
                 }
               >
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/overview" element={<Dashboard />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/chat/:chatId" element={<Chat />} />
                 <Route path="/projects" element={<Projects />} />

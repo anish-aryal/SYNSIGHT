@@ -8,6 +8,8 @@ import TopKeywordsChart from './TopKeywordsChart';
 import SamplePostsList from './SamplePostsList';
 import ActionBar from './ActionBar';
 
+// Analysis Results UI block for Chat page.
+
 const normalizeResults = (results = {}) => {
   const normalized = { ...results };
 
@@ -113,6 +115,7 @@ const capitalize = (value = '') => (value ? value[0].toUpperCase() + value.slice
 
 export default function AnalysisResults({ results, query }) {
   if (!results) {
+    // Layout and appearance
     return (
       <Row>
         <Col xs={12} className="text-center py-4">

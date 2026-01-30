@@ -2,7 +2,10 @@ import React from 'react';
 import { Row, Col, Badge } from 'reactstrap';
 import { TrendingUp } from 'lucide-react';
 
+// Trending Topics UI block for Chat page.
+
 export default function TrendingTopics({ topics, onTopicClick }) {
+  // Layout and appearance
   return (
     <div className="topics-card">
       <Row className="mb-3">

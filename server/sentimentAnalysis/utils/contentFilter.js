@@ -1,6 +1,6 @@
-
-
 import { isValidEnglishContent, isValidLanguageContent } from './languageDetector.js';
+
+// Content Filter utility helpers.
 
 const URL_RE = /https?:\/\/\S+/gi;
 const HASHTAG_RE = /#[\p{L}\p{N}_]+/gu;

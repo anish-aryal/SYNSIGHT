@@ -5,6 +5,11 @@ import {
 } from '../../helpers/responseHelpers.js';
 import Session from '../../models/Session.js';
 import { getTimeAgo } from '../../helpers/sessionhelpers.js';
+import fs from 'fs';
+import path from 'path';
+import { AVATAR_UPLOAD_DIR } from '../../config/uploads.js';
+
+// Profile request handlers.
 
 export const updateProfile = async (req, res) => {
   try {
@@ -41,6 +46,39 @@ export const updateProfile = async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     return sendErrorResponse(res, 'Failed to update profile', 500);
+  }
+};
+
+export const updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return sendErrorResponse(res, 'Avatar file is required', 400);
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return sendErrorResponse(res, 'User not found', 404);
+    }
+
+    const oldAvatar = user.avatar || '';
+
+    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+    user.avatar = avatarUrl;
+    await user.save();
+
+    if (oldAvatar.includes('/uploads/avatars/')) {
+      const filename = oldAvatar.split('/uploads/avatars/').pop();
+      if (filename) {
+        const filePath = path.join(AVATAR_UPLOAD_DIR, filename);
+        fs.unlink(filePath, () => {});
+      }
+    }
+
+    return sendSuccessResponse(res, 'Avatar updated successfully', user.getPublicProfile());
+  } catch (error) {
+    console.error('Update avatar error:', error);
+    return sendErrorResponse(res, 'Failed to update avatar', 500);
   }
 };
 
@@ -205,8 +243,11 @@ export const toggleTwoFactor = async (req, res) => {
       return sendErrorResponse(res, 'User not found', 404);
     }
 
-    // Update two-factor status
-    user.twoFactorEnabled = enabled;
+    // Update two-factor status (stored in preferences)
+    if (!user.preferences) {
+      user.preferences = {};
+    }
+    user.preferences.twoFactorEnabled = enabled;
     await user.save();
 
     const message = enabled 

@@ -1,7 +1,10 @@
 import React from 'react';
 import { Button } from 'reactstrap';
 
+// Social Login Buttons UI block for Auth page.
+
 export default function SocialLoginButtons({ onGoogleClick, onFacebookClick }) {
+  // Layout and appearance
   return (
     <div className="d-flex flex-column gap-3 mb-4">
       <Button 

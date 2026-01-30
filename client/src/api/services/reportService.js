@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Report Service API client helpers.
+
 export const generateReport = async (data) => {
   const response = await api.post('/reports/generate', { data });
   return response.data;

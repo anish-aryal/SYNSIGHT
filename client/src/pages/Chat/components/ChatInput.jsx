@@ -3,6 +3,8 @@ import { Input, Button } from 'reactstrap';
 import { Clock4, Globe, ArrowUp } from 'lucide-react';
 import { useChat } from '../../../api/context/ChatContext';
 
+// Chat Input UI block for Chat page.
+
 const TIMEFRAMES = [
   { value: 'last24hours', label: '24h' },
   { value: 'last7days', label: '7d' },
@@ -57,6 +59,7 @@ export default function ChatInput({ value, onChange, onSend, disabled }) {
   const activeTf = analysisOptions?.timeframe || 'last7days';
   const activeLang = analysisOptions?.language || 'en';
 
+  // Layout and appearance
   return (
     <div className="syn-modernComposer">
       <div className={`syn-modernBar ${disabled ? 'is-disabled' : ''}`}>

@@ -1,5 +1,6 @@
 /* Import Inter Font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css");
 @import './styles/notification-toast.css';
 @import './styles/common.css';
 @import './styles/dashboard.css';

@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+// Session data model schema.
+
 const sessionSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,

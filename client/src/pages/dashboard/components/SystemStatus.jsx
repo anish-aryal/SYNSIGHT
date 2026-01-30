@@ -2,9 +2,12 @@ import React from 'react';
 import { Card, CardBody } from 'reactstrap';
 import { AlertCircle } from 'lucide-react';
 
+// System Status UI block for Dashboard page.
+
 export default function SystemStatus({ items = [], isLoading = false }) {
   const statusItems = Array.isArray(items) ? items : [];
 
+  // Layout and appearance
   return (
     <Card className="h-100">
       <CardBody>

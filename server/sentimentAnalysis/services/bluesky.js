@@ -1,5 +1,7 @@
 import { BskyAgent } from '@atproto/api';
 
+// Bluesky service helpers.
+
 let agent = null;
 
 let isAuthenticated = false;

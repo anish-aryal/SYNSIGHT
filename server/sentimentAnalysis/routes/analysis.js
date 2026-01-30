@@ -17,6 +17,8 @@ import {
 } from '../controller/analysis.js';
 import { protect } from '../../middlewares/auth.js';
 
+// Analysis route definitions.
+
 const router = express.Router();
 
 router.use(protect);

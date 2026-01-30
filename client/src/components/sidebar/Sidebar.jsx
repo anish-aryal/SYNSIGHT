@@ -15,6 +15,9 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Nav, NavItem, NavLink, Navbar, NavbarBrand } from 'reactstrap';
 import { useAuth } from '../../api/context/AuthContext';
+import SynsightLogo from '../SynsightLogo';
+
+// Sidebar sidebar UI component.
 
 export default function Sidebar({ mode = 'full' }) {
   const location = useLocation();
@@ -25,7 +28,7 @@ export default function Sidebar({ mode = 'full' }) {
   const menuItems = [
     { icon: MessageSquare, label: 'Chat', path: '/chat' },
     { icon: History, label: 'Chat History', path: '/history' },
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: LayoutDashboard, label: 'Overview', path: '/overview' },
     { icon: FolderOpen, label: 'Projects', path: '/projects' },
     { icon: Flame, label: 'Trending', path: '/explore' },
     { icon: FileText, label: 'Reports', path: '/reports' },
@@ -36,8 +39,8 @@ export default function Sidebar({ mode = 'full' }) {
   const toggleSidebar = () => setIsOpen((prev) => !prev);
   const closeSidebar = () => setIsOpen(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -45,6 +48,7 @@ export default function Sidebar({ mode = 'full' }) {
     if (!name) return 'U';
     const names = name.trim().split(' ');
     if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    // Layout and appearance
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   };
 
@@ -119,54 +123,7 @@ export default function Sidebar({ mode = 'full' }) {
       <div className="p-4 border-bottom">
         <div className="d-flex align-items-center gap-2">
           <div className="d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="58" height="52" viewBox="0 0 58 52" fill="none">
-              <path
-                d="M3.422 24.6106L25.2981 47.3267C26.0234 48.0798 27.0181 48.5139 28.0634 48.5336C29.1087 48.5533 30.1191 48.157 30.8722 47.4317L53.5883 25.5556"
-                stroke="url(#paint0_linear_12_2212)"
-                strokeWidth="6.84402"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M38.6003 28.0698V12.3013"
-                stroke="url(#paint1_linear_12_2212)"
-                strokeWidth="6.84402"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M28.7445 28.0698V4.41702"
-                stroke="url(#paint2_linear_12_2212)"
-                strokeWidth="6.84402"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M18.8895 28.0698V22.1566"
-                stroke="url(#paint3_linear_12_2212)"
-                strokeWidth="6.84402"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <defs>
-                <linearGradient id="paint0_linear_12_2212" x1="3.422" y1="24.6106" x2="53.5883" y2="25.5556" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#155DFC" />
-                  <stop offset="1" stopColor="#9810FA" />
-                </linearGradient>
-                <linearGradient id="paint1_linear_12_2212" x1="38.6003" y1="12.3013" x2="40.5923" y2="12.4276" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#155DFC" />
-                  <stop offset="1" stopColor="#9810FA" />
-                </linearGradient>
-                <linearGradient id="paint2_linear_12_2212" x1="28.7445" y1="4.41702" x2="30.7409" y2="4.50143" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#155DFC" />
-                  <stop offset="1" stopColor="#9810FA" />
-                </linearGradient>
-                <linearGradient id="paint3_linear_12_2212" x1="18.8895" y1="22.1566" x2="20.8339" y2="22.4854" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#155DFC" />
-                  <stop offset="1" stopColor="#9810FA" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <SynsightLogo width={58} height={52} />
           </div>
           <h5 className="mb-0 fw-bold">SYNSIGHT</h5>
         </div>

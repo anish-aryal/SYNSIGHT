@@ -4,6 +4,8 @@ import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
 import { updatePassword, toggleTwoFactor, getActiveSessions, terminateSession } from '../../../api/services/profileService';
 
+// Security Settings UI block for Settings page.
+
 export default function SecuritySettings() {
   const { user, updateUser } = useAuth();
   const { showSuccess, showError } = useApp();
@@ -28,7 +30,9 @@ export default function SecuritySettings() {
 
   // Initialize two-factor status
   useEffect(() => {
-    if (user?.twoFactorEnabled !== undefined) {
+    if (user?.preferences?.twoFactorEnabled !== undefined) {
+      setTwoFactorEnabled(user.preferences.twoFactorEnabled);
+    } else if (user?.twoFactorEnabled !== undefined) {
       setTwoFactorEnabled(user.twoFactorEnabled);
     }
   }, [user]);
@@ -167,6 +171,7 @@ export default function SecuritySettings() {
     }
   };
 
+  // Layout and appearance
   return (
     <Card className="p-3 border-1 shadow-sm">
       <CardHeader className="bg-white border-bottom py-3">
@@ -191,7 +196,7 @@ export default function SecuritySettings() {
               value={passwords.currentPassword}
               onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
               disabled={passwordLoading}
-              className="bg-light border-0"
+              className="settings-input"
               invalid={!!passwordErrors.currentPassword}
             />
             {passwordErrors.currentPassword && (
@@ -209,7 +214,7 @@ export default function SecuritySettings() {
               value={passwords.newPassword}
               onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
               disabled={passwordLoading}
-              className="bg-light border-0"
+              className="settings-input"
               invalid={!!passwordErrors.newPassword}
             />
             {passwordErrors.newPassword && (
@@ -227,7 +232,7 @@ export default function SecuritySettings() {
               value={passwords.confirmPassword}
               onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
               disabled={passwordLoading}
-              className="bg-light border-0"
+              className="settings-input"
               invalid={!!passwordErrors.confirmPassword}
             />
             {passwordErrors.confirmPassword && (

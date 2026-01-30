@@ -34,6 +34,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+// Design System page layout and interactions.
+
 /**
  * Tokens aligned to your updated global CSS:
  * - Brand: --syn-brand-* / --syn-gradient-primary
@@ -103,6 +105,7 @@ function useActiveSection(sectionIds) {
     );
 
     els.forEach((el) => observerRef.current.observe(el));
+    // Layout and appearance
     return () => observerRef.current?.disconnect();
   }, [sectionIds]);
 

@@ -1,5 +1,5 @@
 // Mock Reddit Service - Returns realistic fake data for development
-console.log('⚠️  Using MOCK Reddit Service - No real API calls');
+console.log('Warning: Using mock Reddit service - no real API calls');
 
 // Generate random date within last 7 days
 const generateRandomDate = () => {

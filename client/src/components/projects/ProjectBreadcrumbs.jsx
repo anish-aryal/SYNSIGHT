@@ -7,6 +7,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+// Project Breadcrumbs component for projects UI.
+
 export default function ProjectBreadcrumbs({
   onBack,
   projectName,
@@ -22,6 +24,7 @@ export default function ProjectBreadcrumbs({
   const resolvedProjectName = projectName || (hasAnalysis ? 'All Projects' : 'Project');
   const showProjectLink = Boolean(projectName && onProjectClick && hasAnalysis);
 
+  // Layout and appearance
   return (
     <div className={`analysis-detail-breadcrumbs-wrap ${className}`.trim()}>
       <button

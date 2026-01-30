@@ -4,6 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../api/context/AuthContext';
 
+// Verify OTP page layout and interactions.
+
 export default function VerifyOTP() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -12,7 +14,7 @@ export default function VerifyOTP() {
   const email = location.state?.email || '';
   const userId = location.state?.userId || '';
   const isLoginOtp = location.state?.isLoginOtp === true;
-  const from = location.state?.from || '/dashboard';
+  const from = location.state?.from || '/overview';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -119,6 +121,7 @@ export default function VerifyOTP() {
     }
   };
 
+  // Layout and appearance
   return (
     <div className="auth-page">
       <Container>

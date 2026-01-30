@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, CardBody, Row, Col } from 'reactstrap';
 import { FolderOpen, BarChart3, Star, Layers } from 'lucide-react';
 
+// Project Stats UI block for Projects page.
+
 export default function ProjectStats({ stats }) {
   const getIcon = (iconName) => {
     const icons = {
@@ -13,6 +15,7 @@ export default function ProjectStats({ stats }) {
     return icons[iconName] || FolderOpen;
   };
 
+  // Layout and appearance
   return (
     <Row className="g-3 mb-4">
       {stats.map((stat) => {

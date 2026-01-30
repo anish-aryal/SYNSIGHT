@@ -7,6 +7,8 @@ import NotificationsSettings from './components/NotificationsSettings';
 import PreferencesSettings from './components/PreferenceSettings';
 import SecuritySettings from './components/SecuritySettings';
 
+// Settings page layout and interactions.
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -21,6 +23,7 @@ export default function Settings() {
       case 'security':
         return <SecuritySettings />;
       case 'billing':
+        // Layout and appearance
         return (
           <div className="settings-upgrade">
             <div className="settings-upgrade-card">

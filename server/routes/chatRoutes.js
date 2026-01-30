@@ -13,6 +13,8 @@ import {
   clearMessages
 } from '../controllers/chatController.js';
 
+// Chat route definitions.
+
 const router = express.Router();
 
 // All routes require authentication

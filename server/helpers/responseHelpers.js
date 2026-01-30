@@ -1,18 +1,20 @@
 import generateToken from '../utils/generateToken.js';
 import { createUserSession } from './sessionhelpers.js';
 
+// Response helper utilities.
+
 export const sendTokenResponse = async (user, res, message = 'Success', statusCode = 200, req = null) => {
   const token = generateToken(user._id);
 
-  console.log('🎫 Token generated for user:', user._id);
-  console.log('📨 req object present?', !!req);
+  console.log('Token generated for user:', user._id);
+  console.log('Request object present?', !!req);
 
   // Create session if req is provided
   if (req) {
-    console.log('🔄 Calling createUserSession...');
+    console.log('Calling createUserSession...');
     await createUserSession(user._id, token, req);
   } else {
-    console.log('⚠️ No req object, skipping session creation');
+    console.log('Warning: No request object, skipping session creation');
   }
 
   // Set cookie

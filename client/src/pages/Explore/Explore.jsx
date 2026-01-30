@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import { getTrendingTopics } from '../../api/services/trendingService';
 
+// Explore page layout and interactions.
+
 export default function Explore() {
   const navigate = useNavigate();
   const [topics, setTopics] = useState([]);
@@ -52,6 +54,7 @@ export default function Explore() {
     });
   };
 
+  // Layout and appearance
   return (
     <div className="syn-page explore-page">
       <Container className="syn-page-container">

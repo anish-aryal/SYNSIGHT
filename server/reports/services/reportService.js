@@ -1,5 +1,7 @@
 import openaiService from './openaiService.js';
 
+// Report service helpers.
+
 class ReportService {
   // Simple escape to prevent quote-breaking / formatting weirdness
   safeText(text = '') {

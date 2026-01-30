@@ -3,6 +3,8 @@ import Analysis from '../models/Analysis.js';
 import Project from '../../projects/models/Project.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
+// Analysis request handlers.
+
 const buildOptions = (body = {}) => ({
   timeframe: body.timeframe || 'last7days',
   language: body.language || 'en',
@@ -210,7 +212,7 @@ export const analyzeBluesky = async (req, res) => {
       maxResults: result?.maxResults ?? maxResults
     });
   } catch (error) {
-    // ✅ If creds missing, make it a clear client message
+    // If creds missing, make it a clear client message
     const msg = error.message || 'Failed to analyze Bluesky data';
     const isCreds = msg.toLowerCase().includes('credentials') || msg.toLowerCase().includes('not configured');
     return sendErrorResponse(res, msg, isCreds ? 400 : 500);
@@ -263,7 +265,7 @@ export const analyzeMultiPlatform = async (req, res) => {
     return sendErrorResponse(res, error.message || 'Failed to analyze multi-platform data', 500);
   }
 };
-// 📜 Get user's analysis history
+// Get user's analysis history
 export const getHistory = async (req, res) => {
   try {
     const analyses = await Analysis.find({ user: req.user._id })
@@ -276,7 +278,7 @@ export const getHistory = async (req, res) => {
   }
 };
 
-// 🔍 Get single analysis by ID
+// Get single analysis by ID
 export const getAnalysisById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -296,7 +298,7 @@ export const getAnalysisById = async (req, res) => {
   }
 };
 
-// 📊 Get sentiment statistics summary
+// Get sentiment statistics summary
 export const getStatistics = async (req, res) => {
   try {
     const stats = await Analysis.aggregate([
@@ -330,7 +332,7 @@ export const deleteAnalysis = async (req, res) => {
 
     const analysis = await Analysis.findOneAndDelete({
       _id: id,
-      user: req.user._id // 🔐 ensure user owns the analysis
+      user: req.user._id // ensure user owns the analysis
     });
 
     if (!analysis) {

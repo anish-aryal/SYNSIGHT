@@ -2,6 +2,8 @@ import React from 'react';
 import { Row, Col } from 'reactstrap';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
+// Platform Breakdown UI block for Chat page.
+
 export default function PlatformBreakdown({ platformBreakdown }) {
   if (!platformBreakdown || platformBreakdown.length === 0) return null;
 
@@ -24,6 +26,7 @@ export default function PlatformBreakdown({ platformBreakdown }) {
     };
   });
 
+  // Layout and appearance
   return (
     <div className="platform-chart-container">
       <Row>

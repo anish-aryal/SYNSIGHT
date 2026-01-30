@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
+import { UPLOADS_DIR } from './config/uploads.js';
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import analysisRoutes from './sentimentAnalysis/routes/analysis.js';
@@ -11,6 +12,7 @@ import chatRoutes from "./routes/chatRoutes.js"
 import reportRoutes from './reports/routes/reportRoutes.js';
 import projectRoutes from './projects/routes/projectRoutes.js';
 
+// Server entry point, middleware, and routes.
 
 // Load env vars
 dotenv.config();
@@ -27,6 +29,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -13,6 +13,8 @@ import { getChatStats } from '../../api/services/chatService';
 import { useApp } from '../../api/context/AppContext';
 import { useAuth } from '../../api/context/AuthContext';
 
+// Dashboard page layout and interactions.
+
 const isWithinDays = (value, days) => {
   if (!value) return false;
   const parsed = new Date(value);
@@ -230,6 +232,7 @@ export default function Dashboard() {
     }
   };
 
+  // Layout and appearance
   return (
     <div className="syn-page dashboard-page">
       <Container className="syn-page-container">
@@ -237,7 +240,7 @@ export default function Dashboard() {
           <Col>
             <div className="syn-page-hero">
               <PageHeader
-                title={`Hi 👋 ${getFirstName(user?.fullName)}`}
+                title={`Hi ${getFirstName(user?.fullName)}`}
                 subtitle="Here is how your sentiment analysis is going"
                 customActions={
                   <Button color="link" className="dashboard-refresh-btn" onClick={() => fetchDashboard(true)}>

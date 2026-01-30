@@ -1,6 +1,8 @@
 import React from 'react';
 import { Lightbulb } from 'lucide-react';
 
+// Key Insights Card UI block for Chat page.
+
 export default function KeyInsightsCard({ insights }) {
   const getInsightsList = () => {
     if (!insights) return [];
@@ -22,6 +24,7 @@ export default function KeyInsightsCard({ insights }) {
 
   if (insightsList.length === 0) return null;
 
+  // Layout and appearance
   return (
     <div className="insights-card">
       <div className="insights-header">

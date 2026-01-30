@@ -1,3 +1,5 @@
+// Keyword Extractor utility helpers.
+
 const STOP_WORDS = new Set([
   'the','is','at','which','on','a','an','and','or','but',
   'in','with','to','for','of','as','by','this','that','it',

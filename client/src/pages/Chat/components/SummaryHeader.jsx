@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Collapse } from 'reactstrap';
 import { TrendingUp, Minus, TrendingDown, FileText, Clock, ChevronDown, ChevronUp, Settings, CheckCircle } from 'lucide-react';
 
+// Summary Header UI block for Chat page.
+
 export default function SummaryHeader({
   query,
   percentages,
@@ -22,6 +24,7 @@ export default function SummaryHeader({
     const value = Number(num);
     if (!Number.isFinite(value)) return '0';
     if (value >= 1000) {
+      // Layout and appearance
       return (value / 1000).toFixed(1) + 'K';
     }
     return value;

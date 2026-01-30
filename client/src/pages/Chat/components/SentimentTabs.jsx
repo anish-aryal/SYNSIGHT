@@ -3,9 +3,12 @@ import { Row, Col, Nav, NavItem, NavLink, TabContent, TabPane } from 'reactstrap
 import OverallSentiment from './OverallSentiment';
 import PlatformBreakdown from './PlatformBreakdown';
 
+// Sentiment Tabs UI block for Chat page.
+
 export default function SentimentTabs({ percentages, platformBreakdown }) {
   const [activeTab, setActiveTab] = useState('overall');
 
+  // Layout and appearance
   return (
     <div className="sentiment-tabs-container">
       <Nav tabs className="sentiment-tab-buttons border-0">

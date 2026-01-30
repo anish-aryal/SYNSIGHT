@@ -1,6 +1,8 @@
 import sendEmail from '../utils/sendEmail.js';
 import { otpEmailTemplate, loginOtpTemplate } from '../utils/emailTemplates.js';
 
+// Authhelpers helper utilities.
+
 export const sendOtpEmail = async (user, isLoginOtp = false) => {
   try {
     // Generate OTP using user model method

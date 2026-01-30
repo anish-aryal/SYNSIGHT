@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+// Openai service helpers.
+
 class OpenAIService {
   constructor() {
     this.apiKey = process.env.OPENAI_API_KEY;

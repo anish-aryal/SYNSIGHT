@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Project Service API client helpers.
+
 export const getProjects = async () => {
   const response = await api.get('/projects');
   return response.data;

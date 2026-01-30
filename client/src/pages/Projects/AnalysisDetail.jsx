@@ -38,6 +38,8 @@ import SentimentTabs from '../Chat/components/SentimentTabs';
 import ProjectBreadcrumbs from '../../components/projects/ProjectBreadcrumbs';
 import HeaderComments from '../../components/projects/HeaderComments';
 
+// Analysis Detail page layout and interactions.
+
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
   const parsed = new Date(value);
@@ -115,6 +117,7 @@ const EmptyStateCard = ({ title, description }) => (
 
 const EngagementBreakdown = ({ likes, shares, comments, total }) => {
   if (!total) {
+    // Layout and appearance
     return (
       <EmptyStateCard
         title="Engagement Breakdown"

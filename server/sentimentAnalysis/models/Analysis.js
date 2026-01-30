@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+// Analysis data model schema.
+
 const commentSchema = new mongoose.Schema(
   {
     text: { type: String, required: true, trim: true, maxlength: 1000 }
@@ -66,7 +68,7 @@ const analysisSchema = new mongoose.Schema(
       processingTime: Number,
       platforms: [String],
 
-      // ✅ store options used
+      // store options used
       timeframe: { type: String },
       language: { type: String }
     },

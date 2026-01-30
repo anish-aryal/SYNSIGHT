@@ -2,6 +2,8 @@ import React from 'react';
 import { Row, Col, Card, CardBody } from 'reactstrap';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine, ReferenceArea } from 'recharts';
 
+// Sentiment Over Time Chart UI block for Chat page.
+
 const formatDate = (value) => {
   if (!value) return '';
   if (String(value).includes('T')) {
@@ -117,6 +119,7 @@ const DominantTooltip = ({ active, payload }) => {
   const point = payload[0]?.payload;
   if (!point) return null;
 
+  // Layout and appearance
   return (
     <div className="sentiment-tooltip">
       <div className="sentiment-tooltip-title">Date: {formatTooltipDate(point.date)}</div>

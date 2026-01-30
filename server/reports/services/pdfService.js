@@ -1,6 +1,8 @@
 import MarkdownIt from 'markdown-it';
 import puppeteer from 'puppeteer';
 
+// Pdf service helpers.
+
 const md = new MarkdownIt({
   html: false,
   linkify: true,

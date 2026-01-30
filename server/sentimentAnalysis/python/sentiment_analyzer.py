@@ -1,3 +1,5 @@
+"""VADER sentiment analysis helper for server-side scoring."""
+
 import sys
 import json
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer

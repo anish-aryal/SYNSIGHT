@@ -1,6 +1,8 @@
 import axios from 'axios';
 import * as SentimentOrchestrator from './orchestrator.js';
 
+// Bluesky Trending service helpers.
+
 // Cache for trending topics (5 minute cache)
 let trendingCache = null;
 let cacheTimestamp = 0;

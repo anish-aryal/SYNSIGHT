@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Profile Service API client helpers.
+
 // Update Profile
 export const updateProfile = async (payload) => {
   try {
@@ -7,6 +9,18 @@ export const updateProfile = async (payload) => {
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || 'Failed to update profile');
+  }
+};
+
+// Upload Avatar
+export const uploadAvatar = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.put('/profile/avatar', formData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.message || 'Failed to upload avatar');
   }
 };
 

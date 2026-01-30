@@ -3,7 +3,9 @@ import { Card, CardHeader, CardBody, CardFooter, Form, FormGroup, Label, Input, 
 import { Camera } from 'lucide-react';
 import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
-import { updateProfile } from '../../../api/services/profileService';
+import { updateProfile, uploadAvatar } from '../../../api/services/profileService';
+
+// Profile Settings UI block for Settings page.
 
 export default function ProfileSettings() {
   const { user, updateUser } = useAuth();
@@ -17,6 +19,8 @@ export default function ProfileSettings() {
   });
 
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef(null);
@@ -31,8 +35,19 @@ export default function ProfileSettings() {
         role: user.role || ''
       });
       setAvatarUrl(user.avatar || null);
+      setAvatarFile(null);
+      setAvatarPreview(null);
     }
   }, [user]);
+
+  useEffect(() => {
+    // Layout and appearance
+    return () => {
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
 
   // Check for changes
   useEffect(() => {
@@ -40,11 +55,11 @@ export default function ProfileSettings() {
       const fullNameChanged = formData.fullName !== (user.fullName || user.name || '');
       const companyChanged = formData.company !== (user.company || '');
       const roleChanged = formData.role !== (user.role || '');
-      const avatarChanged = avatarUrl !== (user.avatar || null);
+      const avatarChanged = !!avatarFile;
 
       setHasChanges(fullNameChanged || companyChanged || roleChanged || avatarChanged);
     }
-  }, [formData, avatarUrl, user]);
+  }, [formData, avatarFile, user]);
 
   const handleChange = (e) => {
     setFormData({
@@ -73,11 +88,13 @@ export default function ProfileSettings() {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      setAvatarPreview(previewUrl);
+      setAvatarFile(file);
     }
   };
 
@@ -129,22 +146,50 @@ export default function ProfileSettings() {
     setLoading(true);
     
     try {
-      const payload = {
-        fullName: formData.fullName.trim(),
-        company: formData.company.trim(),
-        role: formData.role.trim(),
-        avatar: avatarUrl
-      };
+      let didUpdate = false;
+      const profileChanged = user
+        ? (
+            formData.fullName !== (user.fullName || user.name || '') ||
+            formData.company !== (user.company || '') ||
+            formData.role !== (user.role || '')
+          )
+        : false;
 
-      const response = await updateProfile(payload);
-      
-      if (response.success) {
-        updateUser(response.data);
-        showSuccess(response.message || 'Profile updated successfully!');
+      if (avatarFile) {
+        const avatarResponse = await uploadAvatar(avatarFile);
+        if (avatarResponse.success) {
+          updateUser(avatarResponse.data);
+          setAvatarUrl(avatarResponse.data.avatar || null);
+          setAvatarFile(null);
+          if (avatarPreview) {
+            URL.revokeObjectURL(avatarPreview);
+          }
+          setAvatarPreview(null);
+          didUpdate = true;
+        }
+      }
+
+      let response;
+      if (profileChanged) {
+        const payload = {
+          fullName: formData.fullName.trim(),
+          company: formData.company.trim(),
+          role: formData.role.trim()
+        };
+
+        response = await updateProfile(payload);
+        
+        if (response.success) {
+          updateUser(response.data);
+          didUpdate = true;
+        }
+      }
+
+      if (didUpdate) {
+        showSuccess(response?.message || 'Profile updated successfully!');
         setHasChanges(false);
       }
     } catch (error) {
-      // Display backend error message
       showError(error.message);
     } finally {
       setLoading(false);
@@ -160,6 +205,11 @@ export default function ProfileSettings() {
         role: user.role || ''
       });
       setAvatarUrl(user.avatar || null);
+      setAvatarFile(null);
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarPreview(null);
     }
     
     if (fileInputRef.current) {
@@ -195,9 +245,9 @@ export default function ProfileSettings() {
             style={{ cursor: 'pointer' }}
             onClick={handleAvatarClick}
           >
-            {avatarUrl ? (
+            {avatarPreview || avatarUrl ? (
               <img 
-                src={avatarUrl} 
+                src={avatarPreview || avatarUrl} 
                 alt="Profile Avatar"
                 className="rounded-circle"
                 style={{ 
@@ -268,7 +318,7 @@ export default function ProfileSettings() {
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              className="bg-light border-0"
+              className="settings-input"
               disabled={loading}
               required
               maxLength={100}
@@ -283,7 +333,7 @@ export default function ProfileSettings() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="bg-light border-0"
+              className="settings-input"
               disabled
             />
             <small className="text-muted">Email cannot be changed</small>
@@ -298,7 +348,7 @@ export default function ProfileSettings() {
               value={formData.company}
               onChange={handleChange}
               placeholder="Your company name"
-              className="bg-light border-0"
+              className="settings-input"
               disabled={loading}
               maxLength={100}
             />
@@ -313,7 +363,7 @@ export default function ProfileSettings() {
               value={formData.role}
               onChange={handleChange}
               placeholder="Your role"
-              className="bg-light border-0"
+              className="settings-input"
               disabled={loading}
               maxLength={100}
             />

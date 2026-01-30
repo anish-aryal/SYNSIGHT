@@ -1,5 +1,7 @@
 import api from '../apiService';
 
+// Trending Service API client helpers.
+
 export const getTrendingTopics = async (category = 'all') => {
   const response = await api.get('/trending/topics', {
     params: { category }

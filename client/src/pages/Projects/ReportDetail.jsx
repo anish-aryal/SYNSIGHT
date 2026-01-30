@@ -25,6 +25,8 @@ import reportService from '../../api/services/reportService';
 import ProjectBreadcrumbs from '../../components/projects/ProjectBreadcrumbs';
 import HeaderComments from '../../components/projects/HeaderComments';
 
+// Report Detail page layout and interactions.
+
 const formatDate = (value) => {
   if (!value) return 'Unknown date';
   const parsed = new Date(value);
@@ -230,6 +232,7 @@ export default function ReportDetailPanel({
   };
 
   if (isLoading) {
+    // Layout and appearance
     return (
       <div className={`analysis-detail-page ${isEmbedded ? 'is-embedded' : ''}`}>
         <div className={`analysis-detail-shell ${isEmbedded ? 'is-embedded' : ''}`} data-color-mode="light">

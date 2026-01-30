@@ -1,5 +1,7 @@
 import VaderService from './sentimentAnalysis/services/vader.js';
 
+// Local script to test sentiment analysis.
+
 const testSentiment = async () => {
   console.log('Testing VADER Sentiment Analysis...\n');
 

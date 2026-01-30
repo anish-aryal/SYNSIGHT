@@ -14,6 +14,8 @@ import {
 } from '../controllers/reportController.js';
 import { protect } from '../../middlewares/auth.js';
 
+// Report route definitions.
+
 const router = express.Router();
 
 router.post('/generate', protect, generateReport);

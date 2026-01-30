@@ -1,12 +1,15 @@
 import React from 'react';
 import { Row, Col, Card, CardBody } from 'reactstrap';
 
+// Top Keywords Chart UI block for Chat page.
+
 export default function TopKeywordsChart({ keywords }) {
   if (!keywords || keywords.length === 0) return null;
 
   const topKeywords = keywords.slice(0, 5);
   const maxCount = Math.max(...topKeywords.map(k => k.count), 1);
 
+  // Layout and appearance
   return (
     <Card className="section-card">
       <CardBody className="p-0">

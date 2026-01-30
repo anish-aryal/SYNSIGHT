@@ -1,3 +1,5 @@
+// Insights Generator utility helpers.
+
 export const generateInsights = (data, query) => {
   const insights = {};
   const total = data?.total_analyzed ?? data?.totalAnalyzed ?? 0;

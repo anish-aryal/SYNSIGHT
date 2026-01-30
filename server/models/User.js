@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// User data model schema.
+
 const userSchema = new mongoose.Schema({
   fullName: {
     type: String,

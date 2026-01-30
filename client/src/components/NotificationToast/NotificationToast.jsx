@@ -2,6 +2,8 @@ import React from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../api/context/AppContext';
 
+// Notification Toast shared UI component.
+
 export default function NotificationToast() {
   const { notifications, removeNotification } = useApp();
 
@@ -35,6 +37,7 @@ export default function NotificationToast() {
     }
   };
 
+  // Layout and appearance
   return (
     <div className="notification-toast-container">
       {notifications.map(notification => (

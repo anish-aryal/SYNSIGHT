@@ -1,6 +1,8 @@
 import React from 'react';
-import { Card, CardBody, Button, InputGroup, Input } from 'reactstrap';
+import { Card, CardBody, Button, Input } from 'reactstrap';
 import { Calendar, Eye, Download, Search, Trash2, FolderPlus } from 'lucide-react';
+
+// Reports List UI block for Reports page.
 
 export default function ReportsList({
   reports,
@@ -66,31 +68,30 @@ export default function ReportsList({
     });
   };
 
+  // Layout and appearance
   return (
-    <Card className="border-1 shadow-sm">
+    <Card className="reports-panel">
       <CardBody>
-        <div className="d-flex justify-content-between align-items-start mb-4">
+        <div className="reports-header">
           <div>
-            <h5 className="fw-semibold mb-1">Your Reports</h5>
-            <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
+            <h5 className="reports-title">Your Reports</h5>
+            <p className="reports-subtitle">
               Collections of analyses you've saved for future reference
             </p>
           </div>
-          <InputGroup style={{ width: '250px' }}>
+          <div className="reports-search">
+            <Search size={16} className="reports-search-icon" />
             <Input
               type="text"
               placeholder="Search reports..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-end-0"
+              className="reports-search-input"
             />
-            <Button color="light" className="border border-start-0">
-              <Search size={18} />
-            </Button>
-          </InputGroup>
+          </div>
         </div>
 
-        <div className="d-flex flex-column gap-3">
+        <div className="reports-list">
           {reports.length > 0 ? (
             reports.map((report, index) => {
               const reportId = report?._id || report?.id;
@@ -101,71 +102,72 @@ export default function ReportsList({
               const isViewing = viewingReportId === reportId;
               const isDownloading = downloadingReportId === reportId;
               const isDeleting = deletingReportId === reportId;
+              const canView = !!reportId && !isDeleting && !isDownloading && !isViewing;
               const projectName = report?.project?.name;
               
               return (
                 <div
                   key={reportKey}
-                  className={`d-flex justify-content-between align-items-center p-3 border rounded-2 bg-white ${isDeleting ? 'report-item-deleting' : ''}`}
-                  style={{ transition: 'all 0.2s ease' }}
+                  className={`report-item ${canView ? 'report-item-clickable' : ''} ${isDeleting ? 'report-item-deleting' : ''}`}
+                  role={canView ? 'button' : undefined}
+                  tabIndex={canView ? 0 : undefined}
+                  onClick={() => {
+                    if (!canView) return;
+                    onViewReport?.(report);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!canView) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onViewReport?.(report);
+                    }
+                  }}
                 >
-                  <div className="flex-grow-1">
-                    <h6 className="mb-2 fw-medium">{report?.query || report?.title || 'Untitled report'}</h6>
-                    <div className="d-flex align-items-center gap-1 text-muted" style={{ fontSize: '13px' }}>
+                  <div className="report-main">
+                    <div className="report-title-row">
+                      <h6 className="report-title">{report?.query || report?.title || 'Untitled report'}</h6>
+                      {projectName ? (
+                        <span className="report-project-pill">Project: {projectName}</span>
+                      ) : null}
+                    </div>
+                    <div className="report-meta">
                       <Calendar size={14} />
                       <span>{formatDate(report?.createdAt || report?.date)}</span>
                     </div>
-                    {projectName ? (
-                      <div className="text-muted" style={{ fontSize: '12px' }}>
-                        Project: {projectName}
-                      </div>
-                    ) : null}
                   </div>
 
-                  <div className="d-flex align-items-center gap-3">
-                    <div className="text-end">
-                      <p className="text-muted mb-0 fs-6" >
-                        Sentiment
-                      </p>
-                      <p 
-                        className="fw-normal mb-0 fs-5" 
-                        style={{ 
-                          color: sentimentColor
-                        }}
-                      >
+                  <div className="report-side">
+                    <div className="report-sentiment">
+                      <span className="report-sentiment-label">Sentiment</span>
+                      <span className="report-sentiment-score" style={{ color: sentimentColor }}>
                         {sentimentPercent !== null ? `${sentimentPercent}%` : 'N/A'}
-                      </p>
-                      <p className="text-muted mb-0" style={{ fontSize: '12px' }}>
+                      </span>
+                      <span className={`report-sentiment-chip ${dominantSentiment || 'neutral'}`}>
                         {formatSentimentLabel(dominantSentiment)}
-                      </p>
+                      </span>
                     </div>
 
-                    <div className="d-flex gap-2">
+                    <div className="report-actions">
                       <Button
                         color="light"
-                        className="border-1 px-3"
-                        onClick={() => onAssignProject?.(report)}
+                        className="report-action-btn report-action-icon report-action-tooltip"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAssignProject?.(report);
+                        }}
                         disabled={!reportId || isDeleting || isViewing || isDownloading}
+                        data-tooltip="Add to project"
+                        aria-label="Add to project"
                       >
                         <FolderPlus size={16} />
                       </Button>
                       <Button
                         color="light"
-                        className="border-1 d-flex align-items-center gap-2 px-3"
-                        onClick={() => onViewReport?.(report)}
-                        disabled={!reportId || isViewing || isDownloading || isDeleting}
-                      >
-                        {isViewing ? (
-                          <span className="skeleton-line skeleton-inline" style={{ width: '16px', height: '16px' }} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                        <span>{isViewing ? 'Loading' : 'View'}</span>
-                      </Button>
-                      <Button
-                        color="light"
-                        className="border-1 px-3"
-                        onClick={() => onDownloadReport?.(report)}
+                        className="report-action-btn report-action-icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDownloadReport?.(report);
+                        }}
                         disabled={!reportId || isDownloading || isViewing || isDeleting}
                       >
                         {isDownloading ? (
@@ -176,8 +178,11 @@ export default function ReportsList({
                       </Button>
                       <Button
                         color="light"
-                        className="border-1 px-3"
-                        onClick={() => onDeleteReport?.(report)}
+                        className="report-action-btn report-action-icon report-action-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteReport?.(report);
+                        }}
                         disabled={!reportId || isDeleting || isViewing || isDownloading}
                       >
                         {isDeleting ? (

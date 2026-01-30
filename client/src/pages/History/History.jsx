@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../api/context/AppContext';
 import PageHeader from '../../components/PageHeader/PageHeader';
 
+// History page layout and interactions.
+
 export default function History() {
   const { chats, chatsLoading, fetchChats, deleteChat, updateChat, chatsPagination } = useChat();
   const { showSuccess, showError } = useApp();
@@ -43,6 +45,7 @@ export default function History() {
       }
     };
     document.addEventListener('mousedown', handleClick);
+    // Layout and appearance
     return () => document.removeEventListener('mousedown', handleClick);
   }, [openMenuId]);
 

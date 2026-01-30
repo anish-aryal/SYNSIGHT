@@ -4,6 +4,8 @@ import { useAuth } from '../../../api/context/AuthContext';
 import { useApp } from '../../../api/context/AppContext';
 import { updatePreferences } from '../../../api/services/profileService';
 
+// Notifications Settings UI block for Settings page.
+
 export default function NotificationsSettings() {
   const { user, updateUser } = useAuth();
   const { showSuccess, showError, showInfo } = useApp();
@@ -120,6 +122,7 @@ export default function NotificationsSettings() {
     }
   ];
 
+  // Layout and appearance
   return (
     <Card className="p-3 border-1 shadow-sm">
       <CardHeader className="bg-white border-bottom py-3">
@@ -152,11 +155,6 @@ export default function NotificationsSettings() {
                 checked={item.value}
                 onChange={() => handleToggle(item.id)}
                 disabled={loading}
-                style={{ 
-                  width: '3rem', 
-                  height: '1.5rem',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                }}
               />
             </div>
           </div>

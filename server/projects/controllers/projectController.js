@@ -3,6 +3,8 @@ import Analysis from '../../sentimentAnalysis/models/Analysis.js';
 import Report from '../../reports/models/Report.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../helpers/responseHelpers.js';
 
+// Project request handlers.
+
 const buildOwnerInfo = (user) => ({
   id: user?._id,
   name: user?.fullName || user?.name || undefined,

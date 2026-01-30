@@ -3,6 +3,8 @@ import * as chatService from '../services/chatService';
 import * as analysisService from '../services/analysisService';
 import { useApp } from './AppContext';
 
+// Chat context state and actions.
+
 const ChatContext = createContext(null);
 
 export const ChatProvider = ({ children }) => {

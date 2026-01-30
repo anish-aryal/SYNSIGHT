@@ -2,6 +2,8 @@ import React from "react";
 import { Row, Col, Button, InputGroup, Input } from "reactstrap";
 import { Search, Plus } from "lucide-react";
 
+// Page Header shared UI component.
+
 export default function PageHeader({
   title,
   subtitle,
@@ -17,6 +19,7 @@ export default function PageHeader({
 }) {
   const ButtonIcon = buttonIcon;
 
+  // Layout and appearance
   return (
     <Row className="syn-page-header">
       <Col>

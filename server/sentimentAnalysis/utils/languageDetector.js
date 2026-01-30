@@ -1,5 +1,7 @@
 import { franc } from 'franc';
 
+// Language Detector utility helpers.
+
 const MAX_CACHE = 5000;
 const langCache = new Map();
 
