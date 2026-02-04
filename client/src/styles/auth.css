@@ -327,22 +327,38 @@
 .otp-inputs {
   display: flex;
   gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .otp-input {
   width: 52px;
   height: 52px;
+  flex: 0 0 auto;
   border-radius: 12px;
   border: 1px solid var(--color-border);
   text-align: center;
   font-size: 1.1rem;
   font-weight: var(--font-weight-semibold);
+  background: #ffffff;
 }
 
 .otp-input:focus {
   outline: none;
   border-color: rgba(21, 93, 252, 0.45);
   box-shadow: 0 0 0 3px rgba(21, 93, 252, 0.15);
+}
+
+@media (max-width: 575.98px) {
+  .otp-inputs {
+    gap: 0.5rem;
+  }
+
+  .otp-input {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
 }
 
 .auth-illustration {

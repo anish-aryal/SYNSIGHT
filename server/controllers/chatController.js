@@ -4,9 +4,6 @@ import Report from '../reports/models/Report.js';
 
 // Chat request handlers.
 
-// @desc    Create new chat
-// @route   POST /api/chats
-// @access  Private
 export const createChat = async (req, res) => {
   try {
     const { platform = 'all', options = {} } = req.body;
@@ -34,9 +31,7 @@ export const createChat = async (req, res) => {
   }
 };
 
-// @desc    Get all chats for user
-// @route   GET /api/chats
-// @access  Private
+
 export const getChats = async (req, res) => {
   try {
     const { page = 1, limit = 20, archived = false } = req.query;
@@ -98,9 +93,7 @@ export const getChats = async (req, res) => {
   }
 };
 
-// @desc    Get chat analysis stats for user
-// @route   GET /api/chats/stats
-// @access  Private
+
 export const getChatStats = async (req, res) => {
   try {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -138,9 +131,6 @@ export const getChatStats = async (req, res) => {
   }
 };
 
-// @desc    Get chat by analysis ID
-// @route   GET /api/chats/analysis/:analysisId
-// @access  Private
 export const getChatByAnalysisId = async (req, res) => {
   try {
     const { analysisId } = req.params;
@@ -179,9 +169,7 @@ export const getChatByAnalysisId = async (req, res) => {
   }
 };
 
-// @desc    Get single chat with all messages
-// @route   GET /api/chats/:id
-// @access  Private
+
 export const getChatById = async (req, res) => {
   try {
     const chat = await Chat.findOne({
@@ -209,9 +197,7 @@ export const getChatById = async (req, res) => {
   }
 };
 
-// @desc    Add message to chat
-// @route   POST /api/chats/:id/messages
-// @access  Private
+
 export const addMessage = async (req, res) => {
   try {
     const { type, content, query, analysisId } = req.body;
@@ -256,9 +242,6 @@ export const addMessage = async (req, res) => {
   }
 };
 
-// @desc    Update chat
-// @route   PUT /api/chats/:id
-// @access  Private
 export const updateChat = async (req, res) => {
   try {
     const { title, platform, options, isPinned } = req.body;
@@ -295,9 +278,7 @@ export const updateChat = async (req, res) => {
   }
 };
 
-// @desc    Delete chat
-// @route   DELETE /api/chats/:id
-// @access  Private
+
 export const deleteChat = async (req, res) => {
   try {
     const chat = await Chat.findOne({
@@ -355,9 +336,7 @@ export const deleteChat = async (req, res) => {
   }
 };
 
-// @desc    Archive chat
-// @route   PUT /api/chats/:id/archive
-// @access  Private
+
 export const archiveChat = async (req, res) => {
   try {
     const chat = await Chat.findOne({
@@ -389,9 +368,7 @@ export const archiveChat = async (req, res) => {
   }
 };
 
-// @desc    Clear messages
-// @route   DELETE /api/chats/:id/messages
-// @access  Private
+
 export const clearMessages = async (req, res) => {
   try {
     const chat = await Chat.findOne({

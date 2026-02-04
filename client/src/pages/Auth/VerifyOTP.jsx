@@ -175,7 +175,7 @@ export default function VerifyOTP() {
                         onChange={(e) => handleChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(index, e)}
                         onPaste={handlePaste}
-                        className="otp-single-input"
+                        className="otp-input"
                         disabled={loading}
                       />
                     ))}
